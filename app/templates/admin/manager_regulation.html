@@ -1,0 +1,21 @@
+{% extends 'admin/base.html' %}
+
+{% block body %}
+    <div style="border: 1px solid lightgray">
+        <h3 class="p-2">Thông tin quy định hiện tại</h3>
+        <div class="row d-flex justify-content-center pt-4">
+            <div>
+                <div class="row d-flex justify-content-left">
+                    <h5 class="pr-5" style="display: inline-block">Chi phí khám bệnh</h5>
+                    <input type="text" name="medical-price" disabled/>
+                    <span class="px-2">VNĐ</span>
+                    <a class="px-5" class="link-info" href="#">Chỉnh sửa</a>
+                </div>
+                <div class="row d-flex justify-content-left py-5">
+                    <h5 class="pr-5" style="display: inline-block">Số lượng khách tối đa mỗi ngày</h5>
+                    <input id="max" type="number">
+                </div>
+             </div>
+        </div>
+    </div>
+{% endblock %}
