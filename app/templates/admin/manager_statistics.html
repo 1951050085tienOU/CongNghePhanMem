@@ -180,4 +180,74 @@
             </div>
         </div>
     </div>
+<div class="row">
+    <div class="col-md-6 col-xs-12">
+        <table class="table">
+            <tr>
+                <th>Ngày</th>
+                <th>Doanh thu</th>
+            </tr>
+            <tr>
+                {% for r in revenue_stats %}
+                <td>{{ r[0] }}</td>
+                <td>{{ r[1] }}</td>
+                {% endfor %}
+            </tr>
+        </table>
+    </div>
+    <div class="col-md-6 col-xs-12">
+        <canvas id="myRevenueChart" ></canvas>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-6 col-xs-12">
+
+    </div>
+    <div class="col-md-6 col-xs-12">
+        <canvas id="myExaminationChart"></canvas>
+    </div>
+</div>
+
+<script>
+    let labels=[], data=[]
+    let colors =[]
+    let borderColors=[]
+    let r,g,b
+    {% for r in revenue_stats %}
+    labels.push('{{ r[0] }}')
+    data.push({{ r[1] }})
+    r = Math.random()*255
+    g = Math.random()*255
+    b = Math.random()*255
+    colors.push(`rgba(${r},${g},${b},0.3)`)
+    borderColors.push(`rgba(${r},${g},${b},1)`)
+    {% endfor %}
+
+    window.onload = function(){
+        const ctx = document.getElementById('myRevenueChart').getContext('2d');
+        loadChart(ctx, 'bar', labels, 'Thống kê doanh thu', data, colors, borderColors )
+    }
+    function loadChart(ctx, type, labels, label, data, colors, borderColors){
+        const MyChart = new Chart(ctx, {
+            type: type,
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: label,
+                    data: data,
+                    backgroundColor: colors,
+                    borderColor: borderColors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+</script>
 {% endblock %}

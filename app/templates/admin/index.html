@@ -1,0 +1,21 @@
+{% extends 'admin/base.html' %}
+{% block title %} Admin {% endblock %}
+{% block body %}
+{% if current_user.is_authenticated %}
+<h1> CHÀO MỪNG {{ current_user.username }} ĐẾN VỚI TRANG QUẢN TRỊ </h1>
+<p>{{ current_user.user_role }}</p>
+{% else %}
+<h1 class="text-center text-danger">TRANG ĐĂNG NHẬP QUẢN TRỊ</h1>
+<form method="post" action="{{ url_for('admin_login') }}">
+    <div class="form-group">
+        <label for="username" >Username</label>
+        <input type="text" class="form-control" id="username" name="username" required />
+    </div>
+    <div class="form-group">
+        <label for="pass" >Mật khẩu</label>
+        <input type="password" class="form-control" id="pass" name="password" required />
+    </div>
+    <input class="btn btn-danger" type="submit" value="Đăng nhập" />
+</form>
+{% endif %}
+{% endblock %}

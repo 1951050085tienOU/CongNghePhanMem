@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship, backref
 from datetime import datetime
 from enum import Enum as ENUM
 from sqlalchemy.ext.declarative import declared_attr
+from flask_login import UserMixin
 
 class Gender(ENUM):
     NAM = 1
@@ -19,7 +20,7 @@ class Province(db.Model):
 
 
 class District(db.Model):
-    __tablename__= 'district'
+    __tablename__ = 'district'
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(20), nullable=False)
     wards = relationship('Ward', backref='district', lazy=True)
@@ -56,12 +57,13 @@ class UserRole(ENUM):
     NURSE = 3
 
 
-class User(Person):
+class User(Person, UserMixin):
     __tablename__ = 'user'
     username = Column(String(50), nullable=False, unique=True)
     password = Column(String(50), nullable=False)
     avatar = Column(String(100))
     join_date = Column(DateTime, default=datetime.now())
+    active = Column(Boolean, default=True)
     user_role = Column(Enum(UserRole), nullable=False)
     medical_bills = relationship('MedicalBill', backref='user', lazy=True)
     receipts = relationship('Receipt', backref='user', lazy=True)
@@ -75,15 +77,20 @@ class Customer(Person):
                              backref=backref('customers', lazy=True))
     receipts = relationship('Receipt', backref='customer', lazy='subquery')
 
-customer_sche = db.Table('customer_sche',
+'''customer_sche = db.Table('customer_sche',
                          Column('customer_id', Integer, ForeignKey(Customer.id), nullable=False, primary_key=True),
-                         Column('schedule_id', Integer, ForeignKey('schedule.id'), nullable=False, primary_key=True))
+                         Column('schedule_id', Integer, ForeignKey('schedule.id'), nullable=False, primary_key=True),
+                         Column('examined', Boolean, default=False))  #lịch đó đã được khám xong -> True)'''
+
+class CustomerSche(db.Model):
+    customer_id = Column(Integer, ForeignKey(Customer.id), nullable=False, primary_key=True)
+    schedule_id = Column(Integer, ForeignKey('schedule.id'), nullable=False, primary_key=True)
+    examined = Column(Boolean, default=False)
 
 class Schedule(db.Model):
     __tablename__ = 'schedule'
     id = Column(Integer, primary_key=True, autoincrement=True)
     examination_date =Column(DateTime, nullable=False)  #ngày khám
-    examined = Column(Boolean, default=False)   #lịch đó đã được khám xong -> True
     medical_bill = relationship('MedicalBill', backref='schedule', lazy=True, uselist=False)
 
 class MedicalBill(db.Model):
@@ -152,6 +159,29 @@ if __name__ == "__main__":
     db.session.add(p1)
     db.session.add(d1)
     db.session.add(d2)
+    u1 = User(first_name='Hien', last_name='Tran', birthday=datetime.now(), phone_number='0987654321',
+    username='hien', password='123', user_role= UserRole.MANAGER)
+    u2 = User(first_name='Hong', last_name='Tran', birthday=datetime.now(), phone_number='09876541',
+              username='hong', password='123', user_role=UserRole.DOCTOR)
+    u3 = User(first_name='Vi', last_name='Nguyen', birthday=datetime.now(), phone_number='09876321',
+              username='vi', password='123', user_role=UserRole.NURSE)
+    db.session.add(u1)
+    db.session.add(u2)
+    db.session.add(u3)
+
+    c1 = Customer(first_name='Li', last_name='Tran', birthday=datetime.now(),
+                    phone_number='09654321', appointment_date=datetime.now())
+    c2 = Customer(first_name='Ben', last_name='Tran', birthday=datetime.now(),
+                    phone_number='0964321', appointment_date=datetime.now())
+    c3 = Customer(first_name='Bo', last_name='Tran', birthday=datetime.now(),
+                    phone_number='096544321', appointment_date=datetime.now())
+    s1 = Schedule(examination_date=datetime.now())
+    db.session.add(c1)
+    db.session.add(c2)
+    db.session.add(c3)
+    db.session.add(s1)
+    r1 = Regulation()
+    db.session.add(r1)
     db.session.commit()'''
     db.create_all()
 
