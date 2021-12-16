@@ -187,12 +187,12 @@
                 <th>Ngày</th>
                 <th>Doanh thu</th>
             </tr>
+            {% for r in revenue_stats %}
             <tr>
-                {% for r in revenue_stats %}
                 <td>{{ r[0] }}</td>
                 <td>{{ r[1] }}</td>
-                {% endfor %}
             </tr>
+            {% endfor %}
         </table>
     </div>
     <div class="col-md-6 col-xs-12">
@@ -200,18 +200,66 @@
     </div>
 </div>
 <div class="row">
-    <div class="col-md-6 col-xs-12">
-
+    <div class="col-md-6 col-xs-12" >
+        <table class="table">
+            <tr>
+                <th>Ngày</th>
+                <th>Số khách đã khám</th>
+            </tr>
+            {% for e in examination_stats %}
+            <tr>
+                <td> {{ e[0] }} </td>
+                <td> {{ e[1] }} </td>
+            </tr>
+            {% endfor %}
+        </table>
     </div>
-    <div class="col-md-6 col-xs-12">
-        <canvas id="myExaminationChart"></canvas>
+    <div class="col-md-6 col-xs-12" >
+        <canvas id="myExaminationChart" ></canvas>
     </div>
 </div>
-
+<div class="row">
+    <div class="col-md-6 col-xs-12">
+        <table class="table">
+            <tr>
+                <th>Tên thuốc</th>
+                <th>Số lượng</th>
+            </tr>
+            {% for m in medicine_stats %}
+            <tr>
+                <td>{{m[0]}}</td>
+                <td>{{m[1]}}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    <div class="col-md-6 col-xs-12">
+        <canvas id="myMedicineChart" ></canvas>
+    </div>
+</div>
+<div style="font-weight: normal; font-size: 15px">
+    <p>
+        Thuốc cần chú ý bổ sung thêm:
+        {% for t in thuoc_bo_sung %}
+        {{ t.name }}
+        {% endfor %}
+    </p>
+    <p>
+        Thuốc đã hết số lượng:
+        {% for t in thuoc_het_sl %}
+        {{ t.name }}
+        {% endfor %}
+    </p>
+    <p>
+        Tổng số thuốc tồn kho:
+        {{ thuoc_ton_kho }}
+    </p>
+    <p>Tổng số thuốc đã dùng: {{ thuoc_da_dung }}</p>
+</div>
 <script>
-    let labels=[], data=[]
-    let colors =[]
-    let borderColors=[]
+    let labels=[], data=[], labels2=[], data2=[], labels3=[], data3=[]
+    let colors =[], colors2=[], colors3=[]
+    let borderColors=[], borderColors2=[], borderColors3=[]
     let r,g,b
     {% for r in revenue_stats %}
     labels.push('{{ r[0] }}')
@@ -223,9 +271,32 @@
     borderColors.push(`rgba(${r},${g},${b},1)`)
     {% endfor %}
 
+    {% for e in examination_stats %}
+    labels2.push('{{ e[0] }}')
+    data2.push({{ e[1] }})
+    r = Math.random()*255
+    g = Math.random()*255
+    b = Math.random()*255
+    colors2.push(`rgba(${r},${g},${b},0.3)`)
+    borderColors2.push(`rgba(${r},${g},${b},1)`)
+    {% endfor %}
+
+    {% for m in medicine_stats %}
+    labels3.push('{{ m[0] }}')
+    data3.push({{ m[1] }})
+    r = Math.random()*255
+    g = Math.random()*255
+    b = Math.random()*255
+    colors3.push(`rgba(${r},${g},${b},0.3)`)
+    borderColors3.push(`rgba(${r},${g},${b},1)`)
+    {% endfor %}
     window.onload = function(){
         const ctx = document.getElementById('myRevenueChart').getContext('2d');
+        const ctx2 = document.getElementById('myExaminationChart').getContext('2d');
+        const ctx3 = document.getElementById('myMedicineChart').getContext('2d');
         loadChart(ctx, 'bar', labels, 'Thống kê doanh thu', data, colors, borderColors )
+        loadChart(ctx2, 'line', labels2, 'Tần suất khám', data2, colors2, borderColors2)
+        loadChart(ctx3, 'pie', labels3, 'Thống kê thuốc', data3, colors3, borderColors3)
     }
     function loadChart(ctx, type, labels, label, data, colors, borderColors){
         const MyChart = new Chart(ctx, {

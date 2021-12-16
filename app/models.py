@@ -73,14 +73,9 @@ class Customer(Person):
     appointment_date = Column(DateTime, nullable=False) #ngày hẹn
     note = Column(String(100))
     was_scheduled = Column(Boolean, default=False)  #sau khi được xác nhận lịch hẹn -> True
-    schedules = relationship('Schedule', secondary='customer_sche', lazy='subquery',
-                             backref=backref('customers', lazy=True))
+    schedules = relationship('CustomerSche', backref='customers', lazy=True)
     receipts = relationship('Receipt', backref='customer', lazy='subquery')
 
-'''customer_sche = db.Table('customer_sche',
-                         Column('customer_id', Integer, ForeignKey(Customer.id), nullable=False, primary_key=True),
-                         Column('schedule_id', Integer, ForeignKey('schedule.id'), nullable=False, primary_key=True),
-                         Column('examined', Boolean, default=False))  #lịch đó đã được khám xong -> True)'''
 
 class CustomerSche(db.Model):
     customer_id = Column(Integer, ForeignKey(Customer.id), nullable=False, primary_key=True)
@@ -90,8 +85,9 @@ class CustomerSche(db.Model):
 class Schedule(db.Model):
     __tablename__ = 'schedule'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    examination_date =Column(DateTime, nullable=False)  #ngày khám
+    examination_date = Column(DateTime, nullable=False)  #ngày khám
     medical_bill = relationship('MedicalBill', backref='schedule', lazy=True, uselist=False)
+    customers = relationship('CustomerSche', backref='schedules', lazy=True)
 
 class MedicalBill(db.Model):
     __tablename__ = 'medical_bill'
@@ -126,6 +122,8 @@ class Medicine(db.Model):
     producer_id = Column(Integer, ForeignKey('producer.id'))
     medicine_type = Column(Integer, ForeignKey('medicine_type.id'))
     medical_bill_details = relationship('MedicalBillDetail', backref='medicines', lazy=True)
+    def __str__(self):
+        return self.name
 
 class MedicalBillDetail(db.Model):
     medical_bill = Column(Integer, ForeignKey('medical_bill.id'), nullable=False, primary_key=True)
@@ -159,6 +157,7 @@ if __name__ == "__main__":
     db.session.add(p1)
     db.session.add(d1)
     db.session.add(d2)
+    #Add user
     u1 = User(first_name='Hien', last_name='Tran', birthday=datetime.now(), phone_number='0987654321',
     username='hien', password='123', user_role= UserRole.MANAGER)
     u2 = User(first_name='Hong', last_name='Tran', birthday=datetime.now(), phone_number='09876541',
@@ -168,7 +167,7 @@ if __name__ == "__main__":
     db.session.add(u1)
     db.session.add(u2)
     db.session.add(u3)
-
+    #Add customer, schedule, customer_sche
     c1 = Customer(first_name='Li', last_name='Tran', birthday=datetime.now(),
                     phone_number='09654321', appointment_date=datetime.now())
     c2 = Customer(first_name='Ben', last_name='Tran', birthday=datetime.now(),
@@ -176,12 +175,54 @@ if __name__ == "__main__":
     c3 = Customer(first_name='Bo', last_name='Tran', birthday=datetime.now(),
                     phone_number='096544321', appointment_date=datetime.now())
     s1 = Schedule(examination_date=datetime.now())
+    cs1 = CustomerSche(customer_id=1, schedule_id=1, examined=True)
+    cs2 = CustomerSche(customer_id=2, schedule_id=1, examined=True)
+    cs3 = CustomerSche(customer_id=3, schedule_id=1, examined=True)
     db.session.add(c1)
     db.session.add(c2)
     db.session.add(c3)
     db.session.add(s1)
+    db.session.add(cs1)
+    db.session.add(cs2)
+    db.session.add(cs3)
+    # Add regulation
     r1 = Regulation()
     db.session.add(r1)
+    #Add medicine
+    m1 = Medicine(name='AB', quantity=50, price=20000)
+    m2 = Medicine(name='CD', quantity=50, price=30000)
+    m3 = Medicine(name='EF', quantity=50, price=40000)
+    db.session.add(m1)
+    db.session.add(m2)
+    db.session.add(m3)
+    #Add medicall_bill
+    mb1 = MedicalBill(user_id=2, schedule_id=1)
+    mb2 = MedicalBill(user_id=2, schedule_id=1)
+    mb3 = MedicalBill(user_id=2, schedule_id=1)
+    db.session.add(mb1)
+    db.session.add(mb2)
+    db.session.add(mb3)
+    #Add medical_bill_detail
+    mbd1 = MedicalBillDetail(medical_bill=1, medicine=2, quantity=5, unit_price=30000)
+    mbd2 = MedicalBillDetail(medical_bill=1, medicine=3, quantity=10, unit_price=40000)
+    mbd3 = MedicalBillDetail(medical_bill=2, medicine=1, quantity=15, unit_price=20000)
+    mbd4 = MedicalBillDetail(medical_bill=3, medicine=2, quantity=7, unit_price=30000)
+    db.session.add(mbd1)
+    db.session.add(mbd2)
+    db.session.add(mbd3)
+    db.session.add(mbd4)
+    #Add receipt
+    w1 = Receipt(total_price=230000, regulation=1, medical_bill=1, customer_id=1, user_id=3)
+    w2 = Receipt(total_price=250000, regulation=1, medical_bill=2, customer_id=2, user_id=3)
+    w3 = Receipt(total_price=520000, regulation=1, medical_bill=3, customer_id=3, user_id=3)
+    db.session.add(w1)
+    db.session.add(w2)
+    db.session.add(w3)
+
+    m4 = Medicine(name="JJ", quantity=0, price=10000)
+    m5 = Medicine(name="AE", quantity=5, price=15000)
+    db.session.add(m4)
+    db.session.add(m5)
     db.session.commit()'''
     db.create_all()
 
