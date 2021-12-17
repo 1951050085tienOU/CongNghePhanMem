@@ -32,7 +32,9 @@ class MyAdminIndex(AdminIndexView):
 class General(AuthenticatedBaseView):
     @expose('/')
     def index(self):
-        return self.render('admin/general.html')
+        date = datetime.now().day
+        return self.render('admin/general.html', customers_today=utils.luot_kham(date=date),
+                           customers_tomorrow=utils.luot_kham(date=date+1))
 
 class ManagerStatistic(AuthenticatedManagerView):
     @expose('/')

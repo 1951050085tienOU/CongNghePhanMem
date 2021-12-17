@@ -1,5 +1,6 @@
 from app import app, db
-from app.models import User, Receipt, Schedule, MedicalBill, Customer, CustomerSche, Medicine, MedicalBillDetail
+from app.models import User, Receipt, Schedule, MedicalBill, Customer, CustomerSche, \
+    Medicine, MedicalBillDetail, Regulation
 import hashlib
 from sqlalchemy import func, extract
 
@@ -54,6 +55,25 @@ def thuoc_da_dung():
         q += m.quantity
     return q
 
+def luot_kham(date):
+    customers = [0, 0, 0]
+    #Số lượt khám tối đa
+    customers[0] = Regulation.query.filter(extract('day', Regulation.created_date).__le__(date)).all()[-1].customer_quantity
+    # Số lượt khám đã hẹn
+    customers[1] = len(CustomerSche.query.join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+                                .filter(extract('day', Schedule.examination_date) == date).all())
+    #Số lượt khám còn lại
+    customers[2] = (customers[0] - customers[1])
+    return customers
 
+
+'''#Số khách chưa khám
+return len(CustomerSche.query.join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+                                .filter(extract('day', Schedule.examination_date) == date)\
+                                .filter(CustomerSche.examined == False).all())
+#Số khách đã khám
+return len(CustomerSche.query.join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+                                .filter(extract('day', Schedule.examination_date) == date)\
+                                .filter(CustomerSche.examined == True).all())'''
 
 

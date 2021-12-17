@@ -56,15 +56,17 @@
                     <legend><h3 class="p-2" style="font-weight: normal; display: inline-block; width='">Quản lý phòng khám</h3></legend>
                     <div>
                         <h5 class="px-4">Hôm nay</h5>
-                        <p class="px-4">Tổng số lượt khám tối đa: </p>
-                        <p class="px-4">Số lượt khám còn lại: </p>
-                        <p class="px-4">Số lượt khám đã hẹn: </p>
+                        {% if customers_today %}
+                        <p class="px-4">Tổng số lượt khám tối đa: {{ customers_today[0] }}</p>
+                        <p class="px-4">Số lượt khám còn lại: {{ customers_today[1] }}</p>
+                        <p class="px-4">Số lượt khám đã hẹn: {{ customers_today[2] }}</p>
+                        {% endif %}
                     </div>
                     <div>
                         <h5 class="px-4">Ngày mai</h5>
-                        <p class="px-4">Tổng số lượt khám tối đa: </p>
-                        <p class="px-4">Số lượt khám còn lại: </p>
-                        <p class="px-4">Số lượt khám đã hẹn: </p>
+                        <p class="px-4">Tổng số lượt khám tối đa: {{ customers_tomorrow[0] }}</p>
+                        <p class="px-4">Số lượt khám còn lại: {{ customers_tomorrow[1] }}</p>
+                        <p class="px-4">Số lượt khám đã hẹn: {{ customers_tomorrow[2] }}</p>
                     </div>
                 </fieldset>
             </div>

@@ -147,6 +147,7 @@ class Regulation(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     examination_price = Column(Float, default=150000)
     customer_quantity = Column(Integer, default=30)
+    created_date = Column(DateTime, default=datetime.now())
     receipts = relationship('Receipt', backref='regulations', lazy=True)
 
 
@@ -169,25 +170,44 @@ if __name__ == "__main__":
     db.session.add(u3)
     #Add customer, schedule, customer_sche
     c1 = Customer(first_name='Li', last_name='Tran', birthday=datetime.now(),
-                    phone_number='09654321', appointment_date=datetime.now())
+                    phone_number='09654321', appointment_date=datetime(2021,12,16,0))
     c2 = Customer(first_name='Ben', last_name='Tran', birthday=datetime.now(),
-                    phone_number='0964321', appointment_date=datetime.now())
+                    phone_number='0964321', appointment_date=datetime.now(2021,12,16,0))
     c3 = Customer(first_name='Bo', last_name='Tran', birthday=datetime.now(),
-                    phone_number='096544321', appointment_date=datetime.now())
-    s1 = Schedule(examination_date=datetime.now())
+                    phone_number='096544321', appointment_date=datetime(2021,12,16,0))
+    c4 = Customer(first_name='Bo', last_name='Tran', birthday=datetime.now(),
+                    phone_number='09544321', appointment_date=datetime(2021,12,17,0)
+    c5 = Customer(first_name='Bo', last_name='Tran', birthday=datetime.now(),
+                    phone_number='09544321', appointment_date=datetime(2021,12,18,0)
+    c6 = Customer(first_name='Bo', last_name='Tran', birthday=datetime.now(),
+                    phone_number='09544321', appointment_date=datetime(2021,12,18,0)
+    s1 = Schedule(examination_date=datetime(2021,12,16,0))
+    s2 = Schedule(examination_date=datetime(2021,12,17,0))
+    s3 = Schedule(examination_date=datetime(2021,12,18,0))
     cs1 = CustomerSche(customer_id=1, schedule_id=1, examined=True)
     cs2 = CustomerSche(customer_id=2, schedule_id=1, examined=True)
     cs3 = CustomerSche(customer_id=3, schedule_id=1, examined=True)
+    cs4 = CustomerSche(customer_id=4, schedule_id=2, examined=True)
+    cs5 = CustomerSche(customer_id=5, schedule_id=3, examined=True)
+    cs6 = CustomerSche(customer_id=6, schedule_id=3)
     db.session.add(c1)
     db.session.add(c2)
     db.session.add(c3)
+    db.session.add(c4)
+    db.session.add(c5)
+    db.session.add(c6)
     db.session.add(s1)
     db.session.add(cs1)
     db.session.add(cs2)
     db.session.add(cs3)
+    db.session.add(cs4)
+    db.session.add(cs5)
+    db.session.add(cs6)
     # Add regulation
     r1 = Regulation()
+    r2 = Regulation(examination_price= 100000, customer_quantity=25, created_date=datetime(2021,12,18,0))
     db.session.add(r1)
+    db.session.add(r2)
     #Add medicine
     m1 = Medicine(name='AB', quantity=50, price=20000)
     m2 = Medicine(name='CD', quantity=50, price=30000)
@@ -224,5 +244,5 @@ if __name__ == "__main__":
     db.session.add(m4)
     db.session.add(m5)
     db.session.commit()'''
-    db.create_all()
+    #db.create_all()
 
