@@ -3,6 +3,8 @@
 {% block body %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.6.2/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.6.2/chart.esm.js"></script>
+
+
     <div style="border: 1px solid lightgray">
         <div class="p-2">
             <div class="d-md-flex flex-row">
@@ -13,76 +15,43 @@
                 <canvas id="myChart" class=""></canvas>
             </div>
         </div>
+        <!--{{ pre }}-->
+        <!--{{ revenue_statistics }}-->
         <script>
-            const ctx = document.getElementById('myChart').getContext('2d');
-            const myChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
-                    datasets: [{
-                        label: '# of Votes',
-                        data: [12, 19, 3, 5, 2, 3, 55],
-                        backgroundColor: [
-                            'rgba(255, 99, 132, 0.2)',
-                            'rgba(54, 162, 235, 0.2)',
-                            'rgba(255, 206, 86, 0.2)',
-                            'rgba(75, 192, 192, 0.2)',
-                            'rgba(153, 102, 255, 0.2)',
-                            'rgba(255, 159, 64, 0.2)'
-                        ],
-                        borderColor: [
-                            'rgba(255, 99, 132, 1)',
-                            'rgba(54, 162, 235, 1)',
-                            'rgba(255, 206, 86, 1)',
-                            'rgba(75, 192, 192, 1)',
-                            'rgba(153, 102, 255, 1)',
-                            'rgba(255, 159, 64, 1)'
-                        ],
-                        borderWidth: 5
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-        </script>
-        <div class="d-md-flex flex-row">
-            <div class="cold-xs-12 col-md-6 m-4">
-                <fieldset style="border: 1px solid black">
-                    <legend><h3 class="p-2" style="font-weight: normal; display: inline-block; width='">Quản lý phòng khám</h3></legend>
-                    <div>
-                        <h5 class="px-4">Hôm nay</h5>
-                        <p class="px-4">Tổng số lượt khám tối đa: </p>
-                        <p class="px-4">Số lượt khám còn lại: </p>
-                        <p class="px-4">Số lượt khám đã hẹn: </p>
-                    </div>
-                    <div>
-                        <h5 class="px-4">Ngày mai</h5>
-                        <p class="px-4">Tổng số lượt khám tối đa: </p>
-                        <p class="px-4">Số lượt khám còn lại: </p>
-                        <p class="px-4">Số lượt khám đã hẹn: </p>
-                    </div>
-                </fieldset>
-            </div>
-            <div class="cold-xs-12 col-md-6 p-0">
-                <h3 class="p-2" style="font-weight: normal">Thuốc tồn kho</h3>
-                <div class="chart container col-xs-12 col-md-8 pb-2" style="position: relative">
-                    <canvas id="StockChart" class=""></canvas>
-                </div>
-            </div>
-            <script>
+            // Dữ liệu thống kê doanh thu tổng quan
+            let labels = []
+            let data = []
+            {% for mm in list_of_months[::-1] %}
+                labels.push('Tháng {{ mm }}')
+            {% endfor %}
+            {% for re in revenue_statistics[::-1] %}
+                data.push({{ re }})
+            {% endfor %}
+
+            //Dữ liệu thống kê sử dụng thuốc
+
+            let labels_medicine = []
+            let data_medicine = []
+            {% for medicine_name in medicine_statistics_name %}
+                labels_medicine.push('{{ medicine_name }}')
+            {% endfor %}
+            {% for medicine_percent in medicine_statistics_percent %}
+                data_medicine.push({{ medicine_percent }})
+            {% endfor %}
+            window.onload = function() {
+                const ctx = document.getElementById('myChart').getContext('2d');
+                loadChart(ctx, labels, data, 'line', 'Doanh thu');
                 const ctxStock = document.getElementById('StockChart').getContext('2d');
-                const chartStock = new Chart(ctxStock, {
-                    type: 'pie',
+                loadChart(ctxStock, labels_medicine, data_medicine, 'pie', 'Loại thuốc');
+            }
+            function loadChart(ctx, labels, data, type, label) {
+                const chart = new Chart(ctx, {
+                    type: type,
                     data: {
-                        labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+                        labels: labels,
                         datasets: [{
-                            label: '# of Votes',
-                            data: [12, 19, 3, 5, 2, 3],
+                            label: label,
+                            data: data,
                             backgroundColor: [
                                 'rgba(255, 99, 132, 0.2)',
                                 'rgba(54, 162, 235, 0.2)',
@@ -110,7 +79,32 @@
                         }
                     }
                 });
-            </script>
+            }
+        </script>
+        <div class="d-md-flex flex-row">
+            <div class="cold-xs-12 col-md-6 m-4">
+                <fieldset style="border: 1px solid black">
+                    <legend><h3 class="p-2" style="font-weight: normal; display: inline-block; width='">Quản lý phòng khám</h3></legend>
+                    <div>
+                        <h5 class="px-4">Hôm nay</h5>
+                        <p class="px-4">Tổng số lượt khám tối đa: <span>{{ max_customer }}</span> </p>
+                        <p class="px-4">Số lượt khám còn lại: <span>{{ max_customer - ordered_today }}</span></p>
+                        <p class="px-4">Số lượt khám đã hẹn: <span>{{ ordered_today }}</span></p>
+                    </div>
+                    <div>
+                        <h5 class="px-4">Ngày mai</h5>
+                        <p class="px-4">Tổng số lượt khám tối đa: <span>{{ max_customer }}</span></p>
+                        <p class="px-4">Số lượt khám còn lại: <span>{{ max_customer - ordered_tomorrow }}</span></p>
+                        <p class="px-4">Số lượt khám đã hẹn: <span>{{ ordered_tomorrow }}</span></p>
+                    </div>
+                </fieldset>
+            </div>
+            <div class="cold-xs-12 col-md-6 p-0">
+                <h3 class="p-2" style="font-weight: normal">Thuốc tồn kho</h3>
+                <div class="chart container col-xs-12 col-md-8 pb-2" style="position: relative">
+                    <canvas id="StockChart" class=""></canvas>
+                </div>
+            </div>
         </div>
     </div>
 {% endblock %}
