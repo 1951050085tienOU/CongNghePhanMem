@@ -1,5 +1,5 @@
 from app import app, db, login
-from flask import render_template, url_for, request, redirect
+from flask import render_template, url_for, request, redirect, jsonify
 import utils
 from flask_login import login_user, logout_user, current_user
 
@@ -16,6 +16,7 @@ def admin_login():
     if user:
         login_user(user=user)
     return redirect('/admin')
+
 
 @login.user_loader
 def load_user(user_id):

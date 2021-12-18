@@ -1,5 +1,5 @@
 from app import app, db, login
-from flask import redirect, request
+from flask import redirect, request, session, jsonify
 from flask_admin import Admin, AdminIndexView, expose, BaseView
 from flask_admin.contrib.sqla import ModelView
 from app.models import UserRole
@@ -40,11 +40,23 @@ class ManagerStatistic(AuthenticatedManagerView):
     @expose('/')
     def index(self):
         month = request.args.get('month', datetime.now().month)
-        return self.render('admin/manager_statistics.html', revenue_stats=utils.revenue_stats(month=month),
+        doanhthu = request.args.get('doanhthu', 5000000)
+        types = [{
+            'value': 'line',
+            'text': 'Đường'
+        }, {
+            'value': 'bar',
+            'text': 'Cột'
+        }, {
+            'value': 'pie',
+            'text': 'Tròn'
+        }]
+        type = request.args.get('chart')
+        return self.render('admin/manager_statistics.html', revenue_stats=utils.revenue_stats(month=month, doanhthu=doanhthu),
                            examination_stats=utils.examination_stats(month=month),
                            medicine_stats=utils.medicine_stats(), thuoc_bo_sung=utils.thuoc_bo_sung(),
                            thuoc_het_sl=utils.thuoc_het_sl(), thuoc_ton_kho=utils.thuoc_ton_kho(),
-                           thuoc_da_dung=utils.thuoc_da_dung())
+                           thuoc_da_dung=utils.thuoc_da_dung(), types=types, type=type)
 
 
 class Management(AuthenticatedManagerView):

@@ -86,7 +86,7 @@ class Schedule(db.Model):
     __tablename__ = 'schedule'
     id = Column(Integer, primary_key=True, autoincrement=True)
     examination_date = Column(DateTime, nullable=False)  #ngày khám
-    medical_bill = relationship('MedicalBill', backref='schedule', lazy=True, uselist=False)
+    medical_bill = relationship('MedicalBill', backref='schedule', lazy=False, uselist=False)
     customers = relationship('CustomerSche', backref='schedules', lazy=True)
 
 class MedicalBill(db.Model):
@@ -97,7 +97,7 @@ class MedicalBill(db.Model):
     user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
     schedule_id = Column(Integer, ForeignKey('schedule.id'), nullable=False)
     details = relationship('MedicalBillDetail', backref='medicalbill', lazy=True)
-    receipt = relationship('Receipt', backref='medicalbill', uselist=False, lazy=True)
+    receipt = relationship('Receipt', backref='medicalbill', uselist=False, lazy=False)
 
 class Producer(db.Model):
     __tablename__ = 'producer'
@@ -158,6 +158,7 @@ if __name__ == "__main__":
     db.session.add(p1)
     db.session.add(d1)
     db.session.add(d2)
+    db.session.commit()
     #Add user
     u1 = User(first_name='Hien', last_name='Tran', birthday=datetime.now(), phone_number='0987654321',
     username='hien', password='123', user_role= UserRole.MANAGER)
@@ -181,6 +182,13 @@ if __name__ == "__main__":
                     phone_number='09544321', appointment_date=datetime(2021,12,18,0)
     c6 = Customer(first_name='Bo', last_name='Tran', birthday=datetime.now(),
                     phone_number='09544321', appointment_date=datetime(2021,12,18,0)
+    db.session.add(c1)
+    db.session.add(c2)
+    db.session.add(c3)
+    db.session.add(c4)
+    db.session.add(c5)
+    db.session.add(c6)
+    
     s1 = Schedule(examination_date=datetime(2021,12,16,0))
     s2 = Schedule(examination_date=datetime(2021,12,17,0))
     s3 = Schedule(examination_date=datetime(2021,12,18,0))
@@ -190,13 +198,9 @@ if __name__ == "__main__":
     cs4 = CustomerSche(customer_id=4, schedule_id=2, examined=True)
     cs5 = CustomerSche(customer_id=5, schedule_id=3, examined=True)
     cs6 = CustomerSche(customer_id=6, schedule_id=3)
-    db.session.add(c1)
-    db.session.add(c2)
-    db.session.add(c3)
-    db.session.add(c4)
-    db.session.add(c5)
-    db.session.add(c6)
     db.session.add(s1)
+    db.session.add(s2)
+    db.session.add(s3)
     db.session.add(cs1)
     db.session.add(cs2)
     db.session.add(cs3)
@@ -212,9 +216,13 @@ if __name__ == "__main__":
     m1 = Medicine(name='AB', quantity=50, price=20000)
     m2 = Medicine(name='CD', quantity=50, price=30000)
     m3 = Medicine(name='EF', quantity=50, price=40000)
+    m4 = Medicine(name="JJ", quantity=0, price=10000)
+    m5 = Medicine(name="AE", quantity=5, price=15000)
     db.session.add(m1)
     db.session.add(m2)
     db.session.add(m3)
+    db.session.add(m4)
+    db.session.add(m5)
     #Add medicall_bill
     mb1 = MedicalBill(user_id=2, schedule_id=1)
     mb2 = MedicalBill(user_id=2, schedule_id=1)
@@ -235,14 +243,12 @@ if __name__ == "__main__":
     w1 = Receipt(total_price=230000, regulation=1, medical_bill=1, customer_id=1, user_id=3)
     w2 = Receipt(total_price=250000, regulation=1, medical_bill=2, customer_id=2, user_id=3)
     w3 = Receipt(total_price=520000, regulation=1, medical_bill=3, customer_id=3, user_id=3)
+    w4 = Receipt(total_price=233000, regulation=1, medical_bill=3, customer_id=4, user_id=3)
     db.session.add(w1)
     db.session.add(w2)
     db.session.add(w3)
+    db.session.add(w4)
 
-    m4 = Medicine(name="JJ", quantity=0, price=10000)
-    m5 = Medicine(name="AE", quantity=5, price=15000)
-    db.session.add(m4)
-    db.session.add(m5)
     db.session.commit()'''
-    #db.create_all()
+    db.create_all()
 

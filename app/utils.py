@@ -12,9 +12,10 @@ def check_login(username, password):
         return User.query.filter(User.username.__eq__(username.strip()),
                                  User.password.__eq__(password.strip())).first()
 
-def revenue_stats(month):
-    p = db.session.query(extract('day', Receipt.created_date),
-                         func.sum(Receipt.total_price))\
+def revenue_stats(month,doanhthu):
+    p = db.session.query(extract('day', Receipt.created_date), func.count(Customer.id),
+                         func.sum(Receipt.total_price), (func.sum(Receipt.total_price)/doanhthu)*100)\
+                        .join(Customer, Receipt.customer_id.__eq__(Customer.id))\
                         .filter(extract('month', Receipt.created_date) == month)\
                         .group_by(extract('day', Receipt.created_date))\
                         .order_by(extract('day', Receipt.created_date))
@@ -31,15 +32,16 @@ def examination_stats(month):
     return p.all()
 
 def medicine_stats():
-    return db.session.query(Medicine.name, Medicine.quantity)\
-                        .filter(Medicine.quantity>0)\
+    return db.session.query(Medicine.name, Medicine.price, func.sum(MedicalBillDetail.quantity),
+                            func.count(MedicalBillDetail.medical_bill))\
+                        .join(MedicalBillDetail, MedicalBillDetail.medicine.__eq__(Medicine.id))\
                         .group_by(Medicine.name).all()
 
 def thuoc_bo_sung():
-    return Medicine.query.filter(Medicine.quantity>0, Medicine.quantity<10).all()
+    return Medicine.query.filter(Medicine.quantity > 0, Medicine.quantity < 10).all()
 
 def thuoc_het_sl():
-    return Medicine.query.filter(Medicine.quantity==0)
+    return Medicine.query.filter(Medicine.quantity == 0)
 
 def thuoc_ton_kho():
     medicines = Medicine.query.all()
@@ -65,6 +67,12 @@ def luot_kham(date):
     #Số lượt khám còn lại
     customers[2] = (customers[0] - customers[1])
     return customers
+
+'''def add_regulation(examination_price,customer_quantity):
+    if examination_price and customer_quantity:
+        r = Regulation(examination_price=examination_price, customer_quantity=customer_quantity)
+        db.session.add(r)
+    db.session.commit()'''
 
 
 '''#Số khách chưa khám
