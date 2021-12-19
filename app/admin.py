@@ -1,10 +1,14 @@
 import datetime
 from datetime import datetime, timedelta
-from app import app, utils
+from app import app, utils, db
 from flask_admin import Admin, AdminIndexView, expose, BaseView
-from app.models import Medicine
+from flask_admin.contrib.sqla import ModelView
+from flask_admin.menu import  MenuLink
+from app.models import Medicine, Regulation, MedicineType
 from flask_login import current_user
-from app.models import UserRole
+from app.models import UserRole, Gender
+from flask import request, session, url_for, redirect
+from flask_login import logout_user
 
 
 class ModelAuthenticated(BaseView):
@@ -26,6 +30,7 @@ class ModelAuthenticated(BaseView):
 class General(AdminIndexView, ModelAuthenticated):
     @expose('/')
     def index(self):
+        us = utils.get_user_information()
         #thống kê doanh thu tổng quát
         revenue_statistics = [] #danh sách chứa dữ liệu thống kê
         pre_months = utils.create_list_of_months(datetime.now().month) #danh sách tháng
@@ -52,19 +57,31 @@ class General(AdminIndexView, ModelAuthenticated):
         return self.render('admin/general.html', revenue_statistics=revenue_statistics, list_of_months=pre_months,
                            medicine_statistics_name=medicine_name, medicine_statistics_percent=medicine_percent,
                            max_customer=max_customer, medical_fee=medical_fee, ordered_today=ordered_today,
-                           ordered_tomorrow=ordered_tomorrow)
+                           ordered_tomorrow=ordered_tomorrow, us=us)
 
 
 class ManagerStatistics(ModelAuthenticated):
     @expose('/')
     def __index__(self):
-        #thống kê doanh thu tổng quát
-        revenue_statistics = [] #danh sách chứa dữ liệu thống kê
-        pre_months = utils.create_list_of_months(datetime.now().month) #danh sách tháng
-        for mm in pre_months:
-            revenue_statistics.append(utils.all_revenue_stats(mm, datetime.now().year))
-
-        return self.render('admin/manager_statistics.html', revenue_statistics=revenue_statistics, list_of_months=pre_months)
+        month = request.args.get('month', datetime.now().month)
+        doanhthu = request.args.get('doanhthu', 5000000)
+        types = [{
+            'value': 'line',
+            'text': 'Đường'
+        }, {
+            'value': 'bar',
+            'text': 'Cột'
+        }, {
+            'value': 'pie',
+            'text': 'Tròn'
+        }]
+        type = request.args.get('chart')
+        return self.render('admin/manager_statistics.html',
+                           revenue_stats=utils.revenue_stats(month=month, doanhthu=doanhthu),
+                           examination_stats=utils.examination_stats(month=month),
+                           medicine_stats=utils.medicine_stats(), thuoc_bo_sung=utils.thuoc_bo_sung(),
+                           thuoc_het_sl=utils.thuoc_het_sl(), thuoc_ton_kho=utils.thuoc_ton_kho(),
+                           thuoc_da_dung=utils.thuoc_da_dung(), types=types, type=type)
 
 
 class ManagementMedicine(ModelAuthenticated):
@@ -83,6 +100,13 @@ class ManagementMedicine(ModelAuthenticated):
     }
 
 
+class ManageMedicine(ModelView):
+    can_view_details = True
+    can_edit = True
+    can_create = True
+    can_delete = True
+
+
 class Management(ModelAuthenticated):
 
     @expose('/')
@@ -93,22 +117,82 @@ class Management(ModelAuthenticated):
 class ManagerRegulation(ModelAuthenticated):
     @expose('/')
     def __index__(self):
-        return self.render('admin/manager_regulation.html')
+        reg = utils.get_regulation()  # lấy quy định
+        max_customer = int(reg[0])
+        medical_fee = int(reg[1])
+
+        if request.args:
+            max_customer_new = request.args.get('new_max_customer', max_customer, type=int)
+            medical_fee_new = request.args.get('new_fee', medical_fee, type=int)
+            if medical_fee == int(medical_fee_new) and max_customer == int(max_customer_new):
+                pass
+            else:
+                medical_fee = medical_fee_new
+                max_customer = max_customer_new
+                new = Regulation(examination_price=medical_fee_new, customer_quantity=max_customer_new)
+                db.session.add(new)
+                db.session.commit()
+        return self.render('admin/manager_regulation.html', max_customer=max_customer, medical_fee=medical_fee)
 
 
 class AccountSet(ModelAuthenticated):
     @expose('/')
     def __index__(self):
-        return self.render('admin/account_set.html')
+        user = utils.get_user_information()
+        if request.data:
+            data = request.form
+            utils.edit_user_information(user.id, request.form.get('first_name'), request.form.get('last_name'),
+                                        request.form.get('birthday'), request.form.get('phone'))
+
+        user_role_vi = {
+            'MANAGER': 'Quản lý',
+            'NURSE': 'Y tá',
+            'DOCTOR': 'Bác sĩ',
+            'OTHER': 'Nhân viên'
+        }
+        user_gender = {
+            'NAM': 1,
+            'NU': 2,
+            'KHAC': 3
+        }
+        user_id = user.id
+        user_role = user.user_role.name
+        user_first_name = user.first_name
+        user_last_name = user.last_name
+        user_phone = user.phone_number
+        user_age = datetime.today().year - user.birthday.date().year
+        user_gender_id = user_gender[user.gender_id.name]
+        if user.avatar:
+            user_avatar = user.avatar
+        else:
+            user_avatar = url_for('static', filename='avatar/default.jpg')
+        return self.render('admin/account_set.html', user_id=user_id, user_role=user_role_vi[user_role],
+                           user_first_name=user_first_name, user_last_name=user_last_name, user_phone=user_phone,
+                           user_age=user_age, user_avatar=user_avatar, user_birth=user.birthday.date(),
+                           user_gender=user_gender_id)
+
+class LogOutUser(BaseView):
+    @expose('/')
+    def logout(self):
+        logout_user()
+
+        return redirect('/admin/sign-in')
+
+
 
 admin = Admin(app=app, template_mode='Bootstrap4', name='PHÒNG MẠCH',
               index_view=General(name="Tổng quan"))
 
 admin.add_view(ManagerStatistics(name='Thống kê'))
-admin.add_view(Management(name='Quản lý'))
+#medicine quản lý
+admin.add_view(ManageMedicine(Medicine, db.session, category="Quản lý", name='Kho thuốc'))
+admin.add_view(ManageMedicine(MedicineType, db.session, category="Quản lý", name='Kho đơn vị'))
+admin.add_sub_category(parent_name="Quản lý", name="ManageMedicine")
+
+admin.add_sub_category(name="Links", parent_name="Team")
 admin.add_view(ManagerRegulation(name='Quy định'))
 admin.add_view(AccountSet(name='Tài khoản'))
-
+admin.add_view(LogOutUser(name='Đăng xuất'))
 
 '''nonesj = Admin(app=app, template_mode='Bootstrap4', name='haj',
               index_view=General(name="Tổng quan"))

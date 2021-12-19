@@ -1,6 +1,7 @@
-from app import app, db, login, utils
-from flask import render_template, url_for, request, redirect
-from flask_login import login_user, logout_user
+from app import app, db, login
+from app.models import Regulation
+from flask import render_template, url_for, request, redirect, session, jsonify
+from flask_login import login_user, logout_user, current_user
 
 
 @app.route('/')
@@ -13,7 +14,7 @@ def user_load(user_id):
     return utils.get_user_by_id(user_id=user_id)
 
 
-@app.route('/employee-auth/signin/', methods=['get', 'post'])
+@app.route('/admin/sign-in', methods=['get', 'post'])
 def signin():
     if current_user.is_authenticated:
         return redirect('/admin')
@@ -29,13 +30,22 @@ def signin():
         else:
             err_msg = 'Tài khoản hoặc mật khẩu sai.'
 
-    return render_template('admin/login.html', err_msg=err_msg)
+    return render_template('admin/login.html', err_msg=err_msg, cur=current_user)
 
 
-@app.route('/employee-auth/logout')
-def logout():
-    logout_user()
-    return redirect(url_for('signin'))
+def add_new_regulation():
+    max_customer = request.form.get('new_max_customer')
+    medical_fee = request.form.get('new_fee')
+
+    all_reg = db.session.query(Regulation).all()
+    for reg in all_reg:
+        reg.id = reg.id + 1
+        db.session.add(reg)
+    new = Regulation(id=1, examination_price=medical_fee, customer_quantity=max_customer)
+    db.session.add(new)
+    db.session.commit()
+
+    return
 
 
 if __name__ == '__main__':

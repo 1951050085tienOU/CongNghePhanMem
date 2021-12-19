@@ -6,17 +6,78 @@
         <div class="d-md-flex flex-row py-4">
             <div class="col-xs-12 col-md-7">
                 <div class="px-4 pt-3">
-                    <p class="'d-inline" style="text-algin: center">Mã số nhân viên: <span>Giá trị</span></p>
-                    <p class="'d-inline">Chức danh: <span>Giá trị</span></p>
-                    <p class="'d-inline">Họ tên: <span>Giá trị</span></p>
-                    <p class="'d-inline">Tuổi: <span>Giá trị</span></p>
-                    <p class="'d-inline">Số điện thoại: <span>Giá trị</span></p></br>
-                    <a class="'d-inline" href="#" class="link-info">Thay đổi thông tin</a>
+                    <p class="'d-inline" style="text-algin: center">Mã số nhân viên: <span>{{ user_id }}</span></p>
+                    <p class="'d-inline">Chức danh: <span>{{ user_role }}</span></p>
+                    <p class="'d-inline">Họ tên: <span>{{ user_first_name + ' ' + user_last_name }}</span></p>
+                    <p class="'d-inline">Tuổi: <span>{{ user_age }}</span></p>
+                    <p class="'d-inline">Số điện thoại: <span>{{ user_phone }}</span></p></br>
+                    <a class="'d-inline" href="#" class="link-info" data-toggle="modal"
+                        data-target="#exampleModal">Thay đổi thông tin</a>
+                    <!-- Model -->
+                    <form method="post">
+                        <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog"
+                             aria-labelledby="exampleModalLabel" aria-hidden="true">
+                          <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                              <div class="modal-header">
+                                <h5 class="modal-title" id="exampleModalLabel">Thay đổi thông tin</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                  <span aria-hidden="true">&times;</span>
+                                </button>
+                              </div>
+                              <div class="modal-body">
+                                <div class="d-row d-md-flex py-2">
+                                    <label class="col-md-4" style='text-align: left !important' for="id">Mã số nhân viên</label>
+                                    <input class="col-md-8 w-100" type="text" style='text-align: center !important;' name="id"
+                                           value="{{ user_id }}" disabled/>
+                                </div>
+                                <div class="d-row d-md-flex py-2">
+                                   <label class="col-md-4" style='text-align: left !important' for="first_name">Tên</label>
+                                   <input class="col-md-8 w-100" type="text" style='text-align: center !important;' type="text"
+                                          name="first_name" value="{{ user_first_name }}"/>
+                                </div>
+                                  <div class="d-row d-md-flex py-2">
+                                    <label class="col-md-4" style='text-align: left !important' for="last_name">Họ và tên lót</label>
+                                    <input type="text"  style='text-align: center !important;' name="last_name"
+                                           value="{{ user_last_name }}"/>
+                                </div>
+                                  <div class="d-row d-md-flex py-2">
+                                   <label class="col-md-4" style='text-align: left !important' for="birthday">Ngày sinh</label>
+                                   <input class="col-md-8 w-100" type="date" style='text-align: center !important;' name="birthday"
+                                           value="{{ user_birth }}"/>
+                                </div>
+                                  <div class="d-row d-md-flex py-2">
+                                    <label class="col-md-4" style='text-align: left !important' for="phone">Số điện thoại</label>
+                                    <input class="col-md-8 w-100" type="text" style='text-align: center !important;' name="phone"
+                                           value="{{ user_phone }}"/>
+                                </div>
+                                  <div class="d-row d-md-flex py-2">
+                                    <label class="col-md-4" style='text-align: left !important' for="gender">Giới tính</label>
+                                    <div>
+                                        <input id="gender-male" type="radio" name="gender" value="{{ user_gender['NAM'] }}"/>
+                                        <label for="gender-male">Nam</label>
+                                        <input id="gender-female" type="radio" name="gender" value="{{ user_gender['NU'] }}"/>
+                                        <label for="gender-female">Nữ</label>
+                                        <input id="gender-other" type="radio" name="gender" value="{{ user_gender['KHAC'] }}"/>
+                                        <label for="gender-other">Khác</label>
+                                    </div>
+
+
+                                </div>
+                              </div>
+                              <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+                                <button type="button" class="btn btn-primary">Lưu lại</button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                    </form>
                 </div>
             </div>
             <div class="col-xs-12 col-md-5">
-                <div class="d-flex justify-content-center">
-                    <img class style="display: block" src="{{ url_for('static', filename='avatar/default.jpg') }}" alt="">
+                <div class="d-flex justify-content-center" >
+                    <img style="display: block; width: 250px; height: 250px" src="{{ user_avatar }}" alt="">
                 </div></br>
                     <a style="display: block; text-align: center" href="#" class="link-info">Thay đổi ảnh</a>
             </div>

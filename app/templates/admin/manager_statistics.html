@@ -3,159 +3,207 @@
 {% block body %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.6.2/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.6.2/chart.esm.js"></script>
+    <script src="{{ url_for('static', filename='js/stats.js') }}" ></script>
     <div class="d-md-flex flex-row mb-2" style="border: 1px solid lightgray">
-        <div class="col-xs-12 col-md-6 p-0">
+        <div name="stats" class="col-xs-12 col-md-6 p-0">
             <h3 class="p-2" style="font-weight: normal">Thống kê doanh thu</h3>
             <div class='d-flex flex-row pr-3'>
-                <a href="#" style="display: inline-block" class="link-info ml-auto">Bảng biểu</a>
-                <form class="pl-2" style="display: inline-block">
+                <form class="pl-2 ml-auto" style="display: inline-block">
                     <select name='chart' id="chartSelect-stat">
-                        <option value="line">Đường</option>
-                        <option value="bar">Cột</option>
-                        <option value="pie">Tròn</option>
-                        <option value="area">Miền</option>
+                        {% for t in types %}
+                        <option value={{t['value']}}>{{t['text']}}</option>
+                        {% endfor %}
                     </select>
+                    <input type="submit" class="btn btn-info" value="Thống kê" />
                  </form>
             </div>
             <div class="chart container" style="position: relative">
-                <canvas id="customerChart" class=""></canvas>
+                <canvas id="myRevenueChart" class=""></canvas>
             </div>
         </div>
         <div class="col-xs-12 col-md-6 p-0">
             <h3 class="p-2" style="font-weight: normal">Tần suất khám</h3>
             <div class='d-flex flex-row pr-3'>
-                <a href="#" style="display: inline-block" class="link-info ml-auto">Bảng biểu</a>
-                <form class="pl-2" style="display: inline-block">
+                <!--<a href="#" style="display: inline-block" class="link-info ml-auto">Bảng biểu</a>-->
+                <form class="pl-2 ml-auto" style="display: inline-block">
                     <select name='chart' id="chartSelect-name">
                         <option value="line">Đường</option>
                         <option value="bar">Cột</option>
                         <option value="pie">Tròn</option>
-                        <option value="area">Miền</option>
                     </select>
+                    <input type="submit" class="btn btn-info" value="Thống kê" />
                  </form>
             </div>
             <div class="chart container pb-2" style="position: relative">
-                <canvas id="saleChart" class=""></canvas>
+                <canvas id="myExaminationChart" class=""></canvas>
             </div>
         </div>
-        <script>
-            // Dữ liệu thống kê doanh thu
-            let labels = []
-            let data = []
-            {% for mm in list_of_months[::-1] %}
-                labels.push('Tháng {{ mm }}')
-            {% endfor %}
-            {% for re in revenue_statistics[::-1] %}
-                data.push({{ re }})
-            {% endfor %}
-
-            window.onload = function() {
-                const ctx = document.getElementById('customerChart').getContext('2d');
-                loadChart(ctx, labels, data, 'bar', 'Doanh thu');
-            }
-            function loadChart(ctx, labels, data, type, label) {
-                const chart = new Chart(ctx, {
-                    type: type,
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: label,
-                            data: data,
-                            backgroundColor: [
-                                'rgba(255, 99, 132, 0.2)',
-                                'rgba(54, 162, 235, 0.2)',
-                                'rgba(255, 206, 86, 0.2)',
-                                'rgba(75, 192, 192, 0.2)',
-                                'rgba(153, 102, 255, 0.2)',
-                                'rgba(255, 159, 64, 0.2)'
-                            ],
-                            borderColor: [
-                                'rgba(255, 99, 132, 1)',
-                                'rgba(54, 162, 235, 1)',
-                                'rgba(255, 206, 86, 1)',
-                                'rgba(75, 192, 192, 1)',
-                                'rgba(153, 102, 255, 1)',
-                                'rgba(255, 159, 64, 1)'
-                            ],
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        }
-                    }
-                });
-            }
-        </script>
     </div>
     <div class="d-md-flex flex-row container b-0" style="border: 1px solid lightgray">
         <div class="col-xs-12 col-md-7 p-0">
             <h3 class="p-2" style="font-weight: normal">Thống kê sử dụng các loại thuốc</h3>
             <div class="chart container col-xs-12 col-md-7" style="position: relative">
-                <canvas id="StockChart" class=""></canvas>
+                <canvas id="myMedicineChart" class=""></canvas>
             </div>
         </div>
-        <script>
-            const ctxStock = document.getElementById('StockChart').getContext('2d');
-            const chartStock = new Chart(ctxStock, {
-                type: 'pie',
-                data: {
-                    labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
-                    datasets: [{
-                        label: '# of Votes',
-                        data: [12, 19, 3, 5, 2, 3],
-                        backgroundColor: [
-                            'rgba(255, 99, 132, 0.2)',
-                            'rgba(54, 162, 235, 0.2)',
-                            'rgba(255, 206, 86, 0.2)',
-                            'rgba(75, 192, 192, 0.2)',
-                            'rgba(153, 102, 255, 0.2)',
-                            'rgba(255, 159, 64, 0.2)'
-                        ],
-                        borderColor: [
-                            'rgba(255, 99, 132, 1)',
-                            'rgba(54, 162, 235, 1)',
-                            'rgba(255, 206, 86, 1)',
-                            'rgba(75, 192, 192, 1)',
-                            'rgba(153, 102, 255, 1)',
-                            'rgba(255, 159, 64, 1)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-        </script>
         <div class="d-md-flex col-xs-12 col-md-6 m-4">
             <div class="align-self-center text-justify" style="width: 100%">
                 <h4 class="pb-2 " style="font-weight: normal; font-size: 20px">Thống kê thuốc sử dụng tháng <span>12</span></h4>
                 <div class='d-flex flex-row pr-3 py-3'>
-                <a href="#" style="display: inline-block" class="link-info pb-3">Bảng biểu</a>
+                <!--<a href="#" style="display: inline-block" class="link-info pb-3">Bảng biểu</a>-->
                 <form class="pl-2" style="display: inline-block">
                     <select name='chart' id="chartSelect-medicine">
                         <option value="line">Đường</option>
                         <option value="bar">Cột</option>
                         <option value="pie">Tròn</option>
-                        <option value="area">Miền</option>
                     </select>
+                    <input type="submit" class="btn btn-info" value="Thống kê" />
                  </form>
                 </div>
                 <div style="font-weight: normal; font-size: 15px">
-                    <p>Thuốc cần chú ý bổ sung thêm: </p>
-                    <p>Thuốc đã hết số lượng: </p>
-                    <p>Tổng số thuốc tồn kho: </p>
-                    <p>Tổng số thuốc đã dùng: </p>
+                    <p>
+                        Thuốc cần chú ý bổ sung thêm:
+                        {% for t in thuoc_bo_sung %}
+                        {{ t.name }}
+                        {% endfor %}
+                    </p>
+                    <p>
+                        Thuốc đã hết số lượng:
+                        {% for t in thuoc_het_sl %}
+                        {{ t.name }}
+                        {% endfor %}
+                    </p>
+                    <p>
+                        Tổng số thuốc tồn kho:
+                        {{ thuoc_ton_kho }}
+                    </p>
+                    <p>Tổng số thuốc đã dùng: {{ thuoc_da_dung }}</p>
                 </div>
             </div>
         </div>
     </div>
+<!--
+<div class="row">
+    <div class="col-md-6 col-xs-10">
+        <table class="table">
+            <tr>
+                <th>Ngày</th>
+                <th>Số bệnh nhân</th>
+                <th>Doanh thu</th>
+                <th>Tỷ lệ</th>
+            </tr>
+            {% for r in revenue_stats %}
+            <tr>
+                <td>{{ r[0] }}</td>
+                <td>{{ r[1] }}</td>
+                <td>{{ r[2] }}</td>
+                <td>{{ "{:.2f}".format(r[3]) }}%</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-6 col-xs-12" >
+        <table class="table">
+            <tr>
+                <th>Ngày</th>
+                <th>Số khách đã khám</th>
+            </tr>
+            {% for e in examination_stats %}
+            <tr>
+                <td> {{ e[0] }} </td>
+                <td> {{ e[1] }} </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-6 col-xs-12">
+        <table class="table">
+            <tr>
+                <th>Tên thuốc</th>
+                <th>Đơn vị tính</th>
+                <th>Số lượng</th>
+                <th>Số lần dùng</th>
+            </tr>
+            {% for m in medicine_stats %}
+            <tr>
+                <td>{{m[0]}}</td>
+                <td>{{"{:,.1f}".format(m[1])}} VND</td>
+                <td>{{m[2]}}</td>
+                <td>{{m[3]}}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+-->
+<script>
+    let labels=[], data=[], labels2=[], data2=[], labels3=[], data3=[]
+    let colors =[], colors2=[], colors3=[]
+    let borderColors=[], borderColors2=[], borderColors3=[]
+    let r,g,b
+    {% for r in revenue_stats %}
+    labels.push('{{ r[0] }}')
+    data.push({{ r[2] }})
+    r = Math.random()*255
+    g = Math.random()*255
+    b = Math.random()*255
+    colors.push(`rgba(${r},${g},${b},0.3)`)
+    borderColors.push(`rgba(${r},${g},${b},1)`)
+    {% endfor %}
+
+    {% for e in examination_stats %}
+    labels2.push('{{ e[0] }}')
+    data2.push({{ e[1] }})
+    r = Math.random()*255
+    g = Math.random()*255
+    b = Math.random()*255
+    colors2.push(`rgba(${r},${g},${b},0.3)`)
+    borderColors2.push(`rgba(${r},${g},${b},1)`)
+    {% endfor %}
+
+    {% for m in medicine_stats %}
+    labels3.push('{{ m[0] }}')
+    data3.push({{ m[2] }})
+    r = Math.random()*255
+    g = Math.random()*255
+    b = Math.random()*255
+    colors3.push(`rgba(${r},${g},${b},0.3)`)
+    borderColors3.push(`rgba(${r},${g},${b},1)`)
+    {% endfor %}
+    window.onload = function(){
+        const ctxRevenueChart = document.getElementById('myRevenueChart').getContext('2d');
+        const ctxExaminationChart = document.getElementById('myExaminationChart').getContext('2d');
+        const ctxMedicineChart = document.getElementById('myMedicineChart').getContext('2d');
+        loadChart(ctxRevenueChart, 'bar', labels, 'Thống kê doanh thu', data, colors, borderColors)
+        loadChart(ctxExaminationChart, 'line', labels2, 'Tần suất khám', data2, colors2, borderColors2)
+        loadChart(ctxMedicineChart, 'pie', labels3, 'Thống kê thuốc', data3, colors3, borderColors3)
+    }
+    function loadChart(ctx, type, labels, label, data, colors, borderColors){
+        const MyChart = new Chart(ctx, {
+            type: type,
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: label,
+                    data: data,
+                    backgroundColor: colors,
+                    borderColor: borderColors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+</script>
+<br><br>
 {% endblock %}

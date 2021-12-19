@@ -117,12 +117,18 @@ class Producer(db.Model):
     name = Column(String(50))
     medicines = relationship('Medicine', backref='producer', lazy=True)
 
+    def __str__(self):
+        return self.name
+
 
 class MedicineType(db.Model):
     __tablename__ = 'medicine_type'
     id = Column(Integer, primary_key=True, autoincrement=True)
     type_name = Column(String(50))
     medicines = relationship('Medicine', backref='medicinetype', lazy=True)
+
+    def __str__(self):
+        return self.type_name
 
 
 class Medicine(db.Model):

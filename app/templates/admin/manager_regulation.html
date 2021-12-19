@@ -5,17 +5,47 @@
         <h3 class="p-2">Thông tin quy định hiện tại</h3>
         <div class="row d-flex justify-content-center pt-4">
             <div>
-                <div class="row d-flex justify-content-left">
-                    <h5 class="pr-5" style="display: inline-block">Chi phí khám bệnh</h5>
-                    <input type="text" name="medical-price" disabled/>
-                    <span class="px-2">VNĐ</span>
-                    <a class="px-5" class="link-info" href="#">Chỉnh sửa</a>
-                </div>
-                <div class="row d-flex justify-content-left py-5">
-                    <h5 class="pr-5" style="display: inline-block">Số lượng khách tối đa mỗi ngày</h5>
-                    <input id="max" type="number">
-                </div>
-             </div>
+                <form class="container" action="" method="get">
+                    <div class="row d-flex justify-content-left">
+                        <h5 class="pr-5" style="display: inline-block">Chi phí khám bệnh</h5>
+                        <input id="edit-area" type="text" name="new_fee" value="{{ medical_fee }}"
+                               style='text-align: right !important;' disabled/>
+                        <span class="px-2">VNĐ</span>
+                        <a class="px-5" id="edit-tool" href="javascript:;" onclick="ChangeFee()">Chỉnh sửa</a>
+                    </div>
+                    <div class="row d-flex justify-content-left py-5">
+                        <h5 class="pr-5" style="display: inline-block">Số lượng khách tối đa mỗi ngày</h5>
+                        <input id="customer" name="new_max_customer" type="number" value="{{ max_customer }}"
+                               style="text-align: right !important;">
+                    </div>
+                    <div class='pb-3' style="padding: 5px 0; display: flex; justify-content: flex-end;">
+                       <button class="row d-flex justify-content-right" id="regulation-submit"
+                               type="submit">Lưu thay đổi</button>
+                    </div>
+                    <div class='pb-3' style="padding: 5px 0; display: flex; justify-content: flex-end;">
+                       <div class="alert alert-success d-none announcementSubmit">
+                           <strong>Thành công!</strong> Quy định mới đã được áp dụng thành công.
+                      </div>
+                    </div>
+                </form>
+            </div>
         </div>
+
     </div>
+    <script>
+        let inputNew = document.querySelector('#edit-area');
+        let inputLabel = document.querySelector('#edit-tool');
+
+        function ChangeFee() {
+            attribute = inputNew.getAttribute('disabled')
+            if (attribute)   {
+                inputLabel.innerHTML = inputLabel.innerHTML.replace('Chỉnh sửa','Xong');
+                inputNew.removeAttribute("disabled");
+            }
+            else {
+                inputLabel.innerHTML = inputLabel.innerHTML.replace('Xong','Chỉnh sửa');
+                inputNew.setAttribute('disabled', 'disabled');
+            }
+        }
+    </script>
 {% endblock %}
