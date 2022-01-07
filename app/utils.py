@@ -19,6 +19,14 @@ def get_user_by_id(user_id):    #lấy thông tin user dùng cho xử lý đăng
     return User.query.get(user_id)
 
 
+def check_real_information(user_id):
+    user_all = User.query.all()
+    for us in user_all:
+        if user_id.__eq__(us.id):
+            return True
+    return False
+
+
 def revenue_stats_by_day(month, year):  #Thống kê doanh thu mỗi ngày trong tháng
     p = db.session.query(extract('day', Receipt.created_date),
                          func.sum(Receipt.total_price))\

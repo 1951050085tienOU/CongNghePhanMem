@@ -1,4 +1,5 @@
 import datetime
+import hashlib
 from datetime import datetime, timedelta
 from app import app, utils, db
 from flask_admin import Admin, AdminIndexView, expose, BaseView
@@ -105,7 +106,16 @@ class ManageMedicine(ModelView):
     can_edit = True
     can_create = True
     can_delete = True
-
+    column_labels = {
+        'name': 'Tên',
+        'quantity': 'Số lượng',
+        'unit': 'Đơn vị tính',
+        'price': 'Đơn giá',
+        'out_of_date': 'Ngày hết hạn',
+        'producer': 'Nhà cung cấp',
+        'medicinetype': 'Loại thuốc',
+        'type_name': 'Loại thuốc'
+    }
 
 class Management(ModelAuthenticated):
 
@@ -138,38 +148,45 @@ class ManagerRegulation(ModelAuthenticated):
 class AccountSet(ModelAuthenticated):
     @expose('/')
     def __index__(self):
+        mode = request.args.get('password_model_change', 0, type=int)
         user = utils.get_user_information()
-        if request.data:
-            data = request.form
-            utils.edit_user_information(user.id, request.form.get('first_name'), request.form.get('last_name'),
-                                        request.form.get('birthday'), request.form.get('phone'))
 
-        user_role_vi = {
-            'MANAGER': 'Quản lý',
-            'NURSE': 'Y tá',
-            'DOCTOR': 'Bác sĩ',
-            'OTHER': 'Nhân viên'
-        }
-        user_gender = {
-            'NAM': 1,
-            'NU': 2,
-            'KHAC': 3
-        }
-        user_id = user.id
-        user_role = user.user_role.name
-        user_first_name = user.first_name
-        user_last_name = user.last_name
-        user_phone = user.phone_number
-        user_age = datetime.today().year - user.birthday.date().year
-        user_gender_id = user_gender[user.gender_id.name]
-        if user.avatar:
-            user_avatar = user.avatar
-        else:
-            user_avatar = url_for('static', filename='avatar/default.jpg')
-        return self.render('admin/account_set.html', user_id=user_id, user_role=user_role_vi[user_role],
-                           user_first_name=user_first_name, user_last_name=user_last_name, user_phone=user_phone,
-                           user_age=user_age, user_avatar=user_avatar, user_birth=user.birthday.date(),
-                           user_gender=user_gender_id)
+        if not mode:    #thông thường
+            if request.data:
+                data = request.form
+                utils.edit_user_information(user.id, request.form.get('first_name'), request.form.get('last_name'),
+                                            request.form.get('birthday'), request.form.get('phone'))
+
+            user_role_vi = {
+                'MANAGER': 'Quản lý',
+                'NURSE': 'Y tá',
+                'DOCTOR': 'Bác sĩ',
+                'OTHER': 'Nhân viên'
+            }
+            user_gender = {
+                'NAM': 1,
+                'NU': 2,
+                'KHAC': 3
+            }
+            user_id = user.id
+            user_role = user.user_role.name
+            user_first_name = user.first_name
+            user_last_name = user.last_name
+            user_phone = user.phone_number
+            user_age = datetime.today().year - user.birthday.date().year
+            user_gender_id = user_gender[user.gender_id.name]
+            if user.avatar:
+                user_avatar = user.avatar
+            else:
+                user_avatar = url_for('static', filename='avatar/default.jpg')
+
+            return self.render('admin/account_set.html', user_id=user_id, user_role=user_role_vi[user_role],
+                               user_first_name=user_first_name, user_last_name=user_last_name, user_phone=user_phone,
+                               user_age=user_age, user_avatar=user_avatar, user_birth=user.birthday.date(),
+                               user_gender=str(user_gender_id))
+        else:     #mode thay đổi mật khẩu)
+            return self.render('admin/change_password.html', current_password=user.password)
+
 
 class LogOutUser(BaseView):
     @expose('/')
@@ -177,7 +194,6 @@ class LogOutUser(BaseView):
         logout_user()
 
         return redirect('/admin/sign-in')
-
 
 
 admin = Admin(app=app, template_mode='Bootstrap4', name='PHÒNG MẠCH',

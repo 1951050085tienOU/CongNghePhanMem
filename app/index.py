@@ -1,3 +1,6 @@
+import cloudinary.uploader
+
+from flask import render_template
 from app import app, db, login
 from app.models import Regulation
 from flask import render_template, url_for, request, redirect, session, jsonify
@@ -46,6 +49,49 @@ def add_new_regulation():
     db.session.commit()
 
     return
+
+
+@app.route("/admin/submit-change", methods=['get', 'post'])
+def submit_change():
+    if current_user.is_authenticated:
+        if request.method.__eq__('POST'):
+            id_access = utils.get_user_information().id
+            user = utils.get_user_by_id(id_access)
+            avatar = request.files.get('avatar')
+
+            if avatar:
+                res = cloudinary.uploader.upload(avatar)
+                avatar_path = res['secure_url']
+                user.avatar = avatar_path
+                db.session.add(user)
+                db.session.commit()
+                return redirect("/admin/accountset")
+
+            if request.form:
+                user.first_name = request.form['first_name']
+                user.last_name = request.form['last_name']
+                user.birthday = request.form['birthday']
+                user.phone_number = request.form['phone']
+                user.gender_id = list(Gender)[int(request.form['gender']) - 1]
+
+                db.session.add(user)
+                db.session.commit()
+
+        return redirect("/admin/accountset")
+
+
+@app.route("/admin/submit-change-pass", methods=['get', 'post'])
+def change_pass():
+    if current_user.is_authenticated:
+        if request.method.__eq__('POST'):
+            user = utils.get_user_information()
+            us = request.form.get('username')
+            if us.__eq__(user.username):
+                mode = 0
+                user.password = str(hashlib.md5(request.form.get('new-pass').encode('utf-8')).hexdigest())
+                db.session.add(user)
+                db.session.commit()
+    return redirect(url_for('accountset.__index__'))
 
 
 if __name__ == '__main__':
