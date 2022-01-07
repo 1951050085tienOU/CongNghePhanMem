@@ -1,5 +1,5 @@
 from datetime import datetime
-from app import app, db
+from app import app, db, client, keys
 from sqlalchemy.sql import func
 from sqlalchemy.orm import session, query
 from sqlalchemy import func, extract
@@ -181,12 +181,14 @@ def edit_user_information(user_id, first_name, last_name, birthday, phone_number
     db.session.add(user)
     db.session.commit()
 
-#Hiền ###################################################
+
 def thuoc_bo_sung():
     return Medicine.query.filter(Medicine.quantity > 0, Medicine.quantity < 10).all()
 
+
 def thuoc_het_sl():
     return Medicine.query.filter(Medicine.quantity == 0)
+
 
 def thuoc_ton_kho():
     medicines = Medicine.query.all()
@@ -195,12 +197,14 @@ def thuoc_ton_kho():
         q += m.quantity
     return q
 
+
 def thuoc_da_dung():
     medicals = MedicalBillDetail.query.all()
     q = 0
     for m in medicals:
         q += m.quantity
     return q
+
 
 def luot_kham(date):
     customers = [0, 0, 0]
@@ -212,3 +216,11 @@ def luot_kham(date):
     #Số lượt khám còn lại
     customers[2] = (customers[0] - customers[1])
     return customers
+
+
+def send_messages(to_phone, content):
+    if to_phone != '' and content !='':
+        message = client.messages.create(
+            body=content,
+            from_=keys['twilio_number'],
+            to=to_phone)

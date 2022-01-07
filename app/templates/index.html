@@ -51,10 +51,10 @@
                     <li><a href="{{ url_for('index') }}">Trang chủ</a></li>
                     <li><a href="#introduce">Giới thiệu</a></li>
                     <li><a href="#info">Liên hệ</a></li>
-                    <li><button type="button" class="cus-button-as-link" data-toggle="modal"
-                                data-target="#history-lookup">Lịch sử giao dịch</button></li>
-                    <li><button class="btn btn-warming" type="button" data-toggle="modal"
-                                data-target="#order-new">Đặt hẹn</button></li>
+                    <li><button type="button" class="cus-button-as-link" data-toggle="modal" onclick="CheckSession(this.id)"
+                                id="bt-history-lookup">Lịch sử giao dịch</button></li>
+                    <li><button class="btn btn-warming" type="button" data-toggle="modal" onclick="CheckSession(this.id)"
+                                id="bt-order-new">Đặt hẹn</button></li>
                 </ul>
             </div>
         </nav>
@@ -68,8 +68,36 @@
                 <img src="/static/images/go-to-top.png" width="50px" alt="call">
             </a>
         </div>
+        <!-- login -->
+        <div id="login-require" class="modal fade" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Xác thực người dùng</h5>
+                        <button type="button" class="close" aria-label="Out" data-dismiss="modal">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form>
+                            <div id="customerPhone pb-2">
+                                <label class="col-md-4" for="customerPhoneNumber">Số điện thoại</label>
+                                <input class="col-md-7" type="text" id="customerPhoneNumber" name="customerPhoneNumber">
+                            </div>
+                            <div id="OTPValidate pb-2">
+                                <label class="col-md-4" for="otp-code">Mã xác thực</label>
+                                <input class="col-md-4" type="text" id="otp-code" name="otp">
+                                <button type="button" class="cus-button-as-link">Gửi lại mã</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy bỏ</button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <!-- history look up - id: history-lookup-->
-
         <div id="history-lookup" class="modal fade" tabindex="-1">
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -303,7 +331,7 @@
             <div class="col-md-1">
                 <strong>Giới thiệu</strong>
                 <ul>
-                    <li><a href="#">Tổng quan</a></li>
+                    <li><a  id="5" href="javascript:;" onclick="checkObj()">Tổng quan</a></li>
                     <li><a href="#">Cơ sở vật chất</a></li>
                     <li><a href="#">Đội ngũ bác sĩ</a></li>
                     <li><a href="#">Tuyển dụng</a></li>

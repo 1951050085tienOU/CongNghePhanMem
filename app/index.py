@@ -1,10 +1,10 @@
 import cloudinary.uploader
-
 from flask import render_template
 from app import app, db, login
 from app.models import Regulation
 from flask import render_template, url_for, request, redirect, session, jsonify
 from flask_login import login_user, logout_user, current_user
+
 
 
 @app.route('/')
