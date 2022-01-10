@@ -73,7 +73,7 @@ class User(Person, UserMixin):
     receipts = relationship('Receipt', backref='user', lazy=True)
 
 
-class Customer(Person):
+class Customer(Person, UserMixin):
     __tablename__ = 'customer'
     appointment_date = Column(DateTime, nullable=False) #ngày hẹn
     note = Column(String(100))

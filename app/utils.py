@@ -5,6 +5,7 @@ from sqlalchemy.orm import session, query
 from sqlalchemy import func, extract
 from app.models import *
 from flask_login import current_user
+from flask import session, request
 import hashlib
 
 
@@ -218,9 +219,31 @@ def luot_kham(date):
     return customers
 
 
+def reformat_phone_number(phone_number):
+    phone_number = str(phone_number)
+    print(phone_number)
+    #only in vietnam
+    if phone_number.startswith('84') and phone_number.__len__() == 11:
+        return '+' + phone_number
+    elif phone_number.startswith('0') and phone_number.__len__() == 10:
+        return '+84' + phone_number[1:]
+    else:
+        return 0
+
+
 def send_messages(to_phone, content):
+    to_phone = reformat_phone_number(to_phone)
     if to_phone != '' and content !='':
         message = client.messages.create(
             body=content,
             from_=keys['twilio_number'],
             to=to_phone)
+
+
+def get_customer_by_phone(phone_number):
+    return Customer.query.filter(Customer.phone_number.__eq__(phone_number)).first()
+
+
+def session_clear(key):
+     if key in session:
+         del session[key]

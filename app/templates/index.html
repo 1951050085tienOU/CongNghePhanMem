@@ -31,8 +31,11 @@
                             scrollTop: 0
                         }, 1000);
             }
+            window.onload = function() {
+                history.pushState(null, null, '{{ url_for('index')}}');
+            }
         </script>
-    <!-- My custom -->
+        <!-- My custom -->
         <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
         <script src="{{ url_for('static', filename='javascript/javascript.js') }}"></script>
 
@@ -51,10 +54,15 @@
                     <li><a href="{{ url_for('index') }}">Trang chủ</a></li>
                     <li><a href="#introduce">Giới thiệu</a></li>
                     <li><a href="#info">Liên hệ</a></li>
-                    <li><button type="button" class="cus-button-as-link" data-toggle="modal" onclick="CheckSession(this.id)"
+                    <li><button type="button" class="cus-button-as-link" data-toggle="modal" onclick="CheckSession('{{ current_user.id }}', this.id)"
                                 id="bt-history-lookup">Lịch sử giao dịch</button></li>
-                    <li><button class="btn btn-warming" type="button" data-toggle="modal" onclick="CheckSession(this.id)"
+                    <li><button class="btn btn-warming" type="button" data-toggle="modal" onclick="CheckSession('{{ current_user.id }}',this.id)"
                                 id="bt-order-new">Đặt hẹn</button></li>
+                    <li><i>({% if current_user.id %}
+                        Chào mừng, {{ current_user.first_name }}
+                        {% else %}
+                        Chưa đăng nhập
+                        {% endif %})</i></li>
                 </ul>
             </div>
         </nav>
@@ -69,41 +77,51 @@
             </a>
         </div>
         <!-- login -->
-        <div id="login-require" class="modal fade" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Xác thực người dùng</h5>
-                        <button type="button" class="close" aria-label="Out" data-dismiss="modal">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <form>
-                            <div id="customerPhone pb-2">
-                                <label class="col-md-4" for="customerPhoneNumber">Số điện thoại</label>
-                                <input class="col-md-7" type="text" id="customerPhoneNumber" name="customerPhoneNumber">
-                            </div>
-                            <div id="OTPValidate pb-2">
-                                <label class="col-md-4" for="otp-code">Mã xác thực</label>
-                                <input class="col-md-4" type="text" id="otp-code" name="otp">
-                                <button type="button" class="cus-button-as-link">Gửi lại mã</button>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy bỏ</button>
+        <form action="{{ url_for('customer_login') }}" method="post" id="customer-validate">
+            <div id="login-require" class="modal fade" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Xác thực người dùng</h5>
+                            <button type="button" class="close" aria-label="Out" data-dismiss="modal">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <form>
+                                <div id="customerPhone pb-2">
+                                    <label class="col-md-4" for="customerPhoneNumber">Số điện thoại</label>
+                                    <input class="col-md-7" type="tel" maxlength="11" minlength="10" id="customerPhoneNumber" name="customerPhoneNumber"
+                                        onchange="CheckPhoneNumber(this.value, false)" onkeypress="return event.charCode >= 48 && event.charCode <= 57"
+                                           value="{{ current_phone }}" required/>
+                                </div>
+                                <span class="badge badge-danger col-md-5 ml-2" id="customerPhoneNumber-status"></span>
+                                <div id="OTPValidate pb-2">
+                                    <label class="col-md-4" for="otp-code">Mã xác thực</label>
+                                    <input class="col-md-4" type="text" id="otp-code" name="otp_code" onchange="ValidatePhoneNumber(this.value,'customer-validate')"
+                                          maxlength="6" minlength="6" required>
+                                    <!--<button type="button" class="cus-button-as-link" id="send-code-again"
+                                            onclick="($('customerPhoneNumber'), true)">Gửi lại mã
+                                        <span></span></button>-->
+                                    <a class="col-md-4" href="javascript:;" onclick="CheckPhoneNumber(document.getElementById('customerPhoneNumber').value, true)">Gửi lại mã</a>
+                                </div>
+                                <span class="badge badge-danger col-md-5 ml-2" id="otp-code-status">{{ error_code }}</span>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy bỏ</button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </form>
         <!-- history look up - id: history-lookup-->
         <div id="history-lookup" class="modal fade" tabindex="-1">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">TRA CỨU</h5>
-                        <button type="button" class="close" aria-label="Out">
+                        <button type="button" class="close" aria-label="Out" onclick="location.replace('{{ url_for('customer_logout')}}');">
                             <span aria-hidden="true">Thoát quyền</span>
                         </button>
                     </div>
@@ -123,7 +141,7 @@
                     <div class="modal-content">
                         <div class="modal-header">
                             <h5 class="modal-title">ĐẶT HẸN</h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="location.replace('{{ url_for('customer_logout')}}');">
                             <span aria-hidden="true">Thoát quyền</span>
                             </button>
                         </div>
@@ -144,7 +162,8 @@
                             </div>
                             <div class="d-flex flex-row mt-2">
                                 <label class="col-md-4" for="customer-phone">Số điện thoại</label>
-                                <input class="col-md-8" id="customer-phone" type="text" maxlength="10" placeholder="098923xxx"/></br>
+                                <input class="col-md-8" id="customer-phone" type="text" maxlength="10" placeholder="098923xxx"
+                                    value="{{ current_user.phone_number }}" disabled/></br>
                             </div>
                             <div class="d-flex flex-row mt-2">
                                 <label class="col-md-3" for="order-date">Hẹn vào</label>
@@ -157,7 +176,7 @@
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy bỏ</button>
-                            <button type="submit" class="btn btn-secondary" data-dismiss="modal">Đặt hẹn</button>
+                            <button type="submit" class="btn btn-success" data-dismiss="modal">Đặt hẹn</button>
                         </div>
                     </div>
                 </div>
@@ -204,7 +223,7 @@
                 để đáp ứng được sự tiện lợi của khách hàng, với dịch vụ đặt trước có thể đảm bảo được thời gian quý báu
                 của những người đến thăm khám mà không cần đặt trực tiếp tại quầy,...</p>
                 <button class="btn btn-warning" type="button" data-toggle="modal"
-                                data-target="#order-new">Đặt hẹn</button>
+                     id="bn-order-new" onclick="CheckSession(this.id)">Đặt hẹn</button>
             </span>
         </div>
         <!-- introduce -->

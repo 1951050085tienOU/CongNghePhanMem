@@ -76,7 +76,7 @@ div.background-below-text {
     height: 255px;
     width: 1vw;
 }
-.cus-nav-link > li:last-child {
+.cus-nav-link > li:nth-child(5) {
     padding: 0 !important;
     background-color: #ffc107;
     border-radius: 10px;
@@ -88,11 +88,11 @@ div.background-below-text {
     height: 100%;
     padding: 15px 20px;
 }
-.cus-nav-link > li:last-child button {
+.cus-nav-link > li:nth-child(5) button {
     padding: 25px 40px;
 
 }
-.cus-nav-link > li:last-child:hover, .cus-nav-link > li:last-child:hover button{
+.cus-nav-link > li:nth-child(5):hover, .cus-nav-link > li:nth-child(5):hover button{
     background-color: #9ccef5 !important;
     cursor: pointer;
     color: white

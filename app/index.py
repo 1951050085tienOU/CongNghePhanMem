@@ -1,10 +1,12 @@
 import cloudinary.uploader
-from flask import render_template
-from app import app, db, login
-from app.models import Regulation
-from flask import render_template, url_for, request, redirect, session, jsonify
-from flask_login import login_user, logout_user, current_user
+import random
 
+import requests
+from flask import render_template
+from app import app, db, login, client
+from app.models import Regulation
+from flask import render_template, url_for, request, redirect, jsonify
+from flask_login import login_user, logout_user, current_user
 
 
 @app.route('/')
@@ -92,6 +94,56 @@ def change_pass():
                 db.session.add(user)
                 db.session.commit()
     return redirect(url_for('accountset.__index__'))
+
+
+@app.route('/api/login', methods=['POST'])
+def customer_login():
+    if request.method.__eq__('POST'):
+        otp_code = session.pop('response', None)
+        otp = str(request.form.get('otp_code'))
+        if otp == otp_code:
+            customer = utils.get_customer_by_phone(request.form['customerPhoneNumber'])
+            if customer:
+                login_user(user=customer)
+                return render_template('index.html')
+    return render_template('index.html', current_phone=request.form['customerPhoneNumber'], error_code="Mã xác thực không hợp lệ.")
+
+
+@app.route("/api/otp-auth", methods=['POST'])
+def otp_auth():
+    if request.method.__eq__('POST'):
+        otp_code = random.randrange(100000, 999999)
+        if request.json:
+            session.modified = True
+            session['response'] = str(otp_code)
+            print("======================== OTP la " + str(otp_code))
+            phone_number = request.json['phoneNumber']
+            ###########Enable this line to send OTP for customer validation########################
+            '''message = utils.send_messages(phone_number, '[Phòng mạch Hồng Hiền Vy Tiến] Mã số xác thực của bạn là: ' + str(otp_code)
+                                              + '. Xin vui lòng không chia sẻ mã số này cho ai khác kể cả nhân viên của phòng mạch.')'''
+    return 'OK'
+
+
+@app.route("/api/otp-auth-again", methods=['POST'])
+def otp_auth_again():
+    if request.method.__eq__('POST'):
+        otp_code = random.randrange(100000, 999999)
+        if request.json:
+            utils.session_clear('response')
+            session.modified = True
+            session['response'] = str(otp_code)
+            print("======================== AGAIN OTP la " + str(otp_code))
+            phone_number = request.json['phoneNumber']
+            '''message = utils.send_messages(phone_number, '[Phòng mạch Hồng Hiền Vy Tiến] Mã số xác thực của bạn là: ' + str(otp_code)
+                                              + '. Xin vui lòng không chia sẻ mã số này cho ai khác kể cả nhân viên của phòng mạch.')'''
+    return 'OK'
+
+
+@app.route("/api/logout", methods=['get', 'post'])
+def customer_logout():
+    logout_user()
+    utils.session_clear('response')
+    return redirect(url_for('index'))
 
 
 if __name__ == '__main__':
