@@ -7,16 +7,9 @@ from twilio.rest import Client
 
 app = Flask(__name__)
 
-#app.secret_key = "super key" #akj+fg823762531341=2901r-9sd-7g2f98r3sa8d1-2751849
+app.secret_key = "super key" #akj+fg823762531341=2901r-9sd-7g2f98r3sa8d1-2751849
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root@localhost/phongmachhonghienvytiendb?charset=utf8mb4'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
-
-app.config['SECRET_KEY'] = 'akj+fg823762531341=2901r-9sd-7g2f98r3sa8d1-2751849'
-app.config['SESSION_TYPE'] = 'filesystem'
-app.config.from_object(__name__)
-app.config['SESSION_COOKIE_SECURE'] = False
-app.config['SESSION_PERMANENT'] = False
-Session(app)
 
 cloudinary.config(
     cloud_name='suna12846ke',

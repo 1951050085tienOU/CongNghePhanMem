@@ -31,9 +31,72 @@
                             scrollTop: 0
                         }, 1000);
             }
-            window.onload = function() {
-                history.pushState(null, null, '{{ url_for('index')}}');
+            function CheckPhoneNumberExist(phoneNumber) {
+                {% for cus_phone in customers_list %}
+                    if (phoneNumber.endsWith('{{ cus_phone }}')) {
+                        return true;
+                    }
+                {% endfor %}
+                return false;
             }
+            function AnnouncementForNoSupport(phoneNumber, idSpanAnnounce) {
+                if (phoneNumber.startsWith('84') && phoneNumber.length == 11 || phoneNumber.startsWith('0') && phoneNumber.length == 10) {
+                    if (!CheckPhoneNumberExist(phoneNumber)) {
+                        document.getElementById(idSpanAnnounce).textContent = "Có vẻ như bạn cần đăng ký offline tại quầy lần đầu tiên."
+                    }
+                }
+            }
+            function Notifications() {
+                notif_code = '{{ notif }}'
+                if (notif_code.length > 0) {
+                    flagSuccessStatus = false
+                    console.log(notif_code)
+                    flagContent = document.getElementById('notification-header')
+                    contentBlock = document.getElementById('notification-content')
+                    switch (notif_code) {
+                        case "submitSuccess":
+                            flagSuccessStatus = true
+                            contentBlock.textContent = "Đơn hẹn đã được đặt. Nhân viên sẽ gọi lại xác nhận với bạn sớm thôi."
+                            break
+                        case "justOneADay":
+                            flagSuccessStatus = false
+                            contentBlock.textContent = "Đơn hẹn ngày hôm nay của bạn đã được đặt. Hệ thống không thể xử lý thêm đặt hẹn thêm cho bạn trong cùng một ngày."
+                            break
+                        case "ExistOne":
+                            flagSuccessStatus = false
+                            contentBlock.textContent = "Thời gian hẹn bạn đăng ký không có sẵn. Bạn vui lòng đăng ký hẹn thời điểm khác."
+                            break
+                        case "noSuccessReceipt":
+                            flagSuccessStatus = false
+                            contentBlock.textContent = "Chức năng đặt hẹn trực tuyến chỉ dành cho khách hàng đã từng thăm khám tại Phòng mạch Hồng Hiền Vy Tiến."
+                            break
+                        default:
+                            flagSuccessStatus = false
+                            contentBlock.textContent = "Thao tác chưa được xử lý. Lỗi không xác định (0x000)"
+                    }
+                    if (flagSuccessStatus) {
+                        flagContent.textContent = "THÀNH CÔNG"
+                        flagContent.setAttribute('style', 'color: green;')
+                        $('#notification-button-dismiss').addClass('btn-success')
+                    }
+                    else {
+                        flagContent.textContent = "THẤT BẠI"
+                        flagContent.setAttribute('style', 'color: red;')
+                        $('#notification-button-dismiss').addClass('btn-danger')
+                    }
+                    jQuery.noConflict();
+                    $('#notification-modal').modal('show');
+                }
+            }
+
+            $(window).on('load', function() {
+                history.pushState(null, null, '{{ url_for('index')}}');
+                {% if current_user.gender_id %}
+                    document.getElementById('gender-' + '{{current_user.gender_id.value}}').setAttribute('selected', 'selected');
+                {% endif %}
+                Notifications()
+            });
+
         </script>
         <!-- My custom -->
         <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
@@ -54,12 +117,13 @@
                     <li><a href="{{ url_for('index') }}">Trang chủ</a></li>
                     <li><a href="#introduce">Giới thiệu</a></li>
                     <li><a href="#info">Liên hệ</a></li>
+                    <li><a href="#notification-modal" class="trigger-btn" data-toggle="modal">Modal</a></li>
                     <li><button type="button" class="cus-button-as-link" data-toggle="modal" onclick="CheckSession('{{ current_user.id }}', this.id)"
                                 id="bt-history-lookup">Lịch sử giao dịch</button></li>
                     <li><button class="btn btn-warming" type="button" data-toggle="modal" onclick="CheckSession('{{ current_user.id }}',this.id)"
                                 id="bt-order-new">Đặt hẹn</button></li>
                     <li><i>({% if current_user.id %}
-                        Chào mừng, {{ current_user.first_name }}
+                        <span>{{ current_user.first_name }}, <a class="d-inline-block p-0 m-0" href="{{ url_for('customer_logout') }}">Thoát</a></span>
                         {% else %}
                         Chưa đăng nhập
                         {% endif %})</i></li>
@@ -87,12 +151,13 @@
                                 <span aria-hidden="true">&times;</span>
                             </button>
                         </div>
-                        <div class="modal-body">
+                        <div class="modal-body" id="announce-for-no-support">
                             <form>
                                 <div id="customerPhone pb-2">
                                     <label class="col-md-4" for="customerPhoneNumber">Số điện thoại</label>
                                     <input class="col-md-7" type="tel" maxlength="11" minlength="10" id="customerPhoneNumber" name="customerPhoneNumber"
-                                        onchange="CheckPhoneNumber(this.value, false)" onkeypress="return event.charCode >= 48 && event.charCode <= 57"
+                                        onchange="CheckPhoneNumber(this.value, false); AnnouncementForNoSupport(this.value, 'announce-for-no-support')"
+                                           onkeypress="return event.charCode >= 48 && event.charCode <= 57"
                                            value="{{ current_phone }}" required/>
                                 </div>
                                 <span class="badge badge-danger col-md-5 ml-2" id="customerPhoneNumber-status"></span>
@@ -115,18 +180,64 @@
                 </div>
             </div>
         </form>
-        <!-- history look up - id: history-lookup-->
-        <div id="history-lookup" class="modal fade" tabindex="-1">
-            <div class="modal-dialog">
+        <!-- NOTIFICATIONS -->
+        <div id="notification-modal" class="modal fade">
+            <div class="modal-dialog modal-confirm">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">TRA CỨU</h5>
+                        <h4 class="modal-title col-md-12 text-center" id="notification-header"></h4>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-center" id="notification-content"></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-block" id="notification-button-dismiss" data-dismiss="modal">OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- history look up - id: history-lookup-->
+        <div id="history-lookup" class="modal fade" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title cus-header-modal">TRA CỨU</h5>
                         <button type="button" class="close" aria-label="Out" onclick="location.replace('{{ url_for('customer_logout')}}');">
                             <span aria-hidden="true">Thoát quyền</span>
                         </button>
                     </div>
                     <div class="modal-body">
-                        Nội dung tra cứu
+                        {% if orders_history %}
+                        <table class="table text-center">
+                            <thead class="thead-light">
+                            <tr>
+                                <th class="col-md-3">Tên</th>
+                                <th class="col-md-2">Ngày đặt</th>
+                                <th class="col-md-5">Nội dung</th>
+                                <th class="col-md-3">Trạng thái</th>
+                            </tr>
+                            </thead>
+                            <tr>
+                            {% for order in orders_history %}
+                                <td class="col-md-3">{{ order.name }}</td>
+                                <td class="col-md-2">{{ order.ordered_date }}</td>
+                                <td class="col-md-5">{{ order.disease_diagnostic }}</td>
+                                <!--{% if order.note %} {{ order.note }} {% else %}{% endif %}-->
+                                    {% if order.was_scheduled: %}
+                                        {% if order.order_state %}
+                                            <td style="color: green;">Đã khám</td>
+                                            {% else %}
+                                            <td style="color: yellow;">Đã hẹn</td>
+                                        {% endif %}
+                                    {% else %}
+                                        <td style="color: red;">Chưa xác nhận</td>
+                                    {% endif %}
+                            </tr>
+                            {% endfor %}
+                        </table>
+                        {% else %}
+                        Chưa có thông tin nào.
+                        {% endif %}
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
@@ -135,48 +246,55 @@
             </div>
         </div>
         <!-- order modal - id: order-new-->
-        <form>
+        <form action="{{ url_for('new_order_from_client') }}" method="post">
             <div id="order-new" class="modal fade" tabindex="-1">
-                <div class="modal-dialog">
+                <div class="modal-dialog modal-lg">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title">ĐẶT HẸN</h5>
+                            <h5 class="modal-title cus-header-modal">ĐẶT HẸN</h5>
                             <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="location.replace('{{ url_for('customer_logout')}}');">
                             <span aria-hidden="true">Thoát quyền</span>
                             </button>
                         </div>
-                        <div class="modal-body container mt-2">
+                        <div class="modal-body container my-3">
                             <div class="d-flex flex-row">
-                                <label class="col-md-3" for="customer-name">Họ tên</label>
-                                <input class="col-md-9" type="text" id="customer-name" name="customer-name"/></br>
+                                <label class="col-md-2" for="customer-fname">Tên</label>
+                                <input class="col-md-4 text-center" type="text" id="customer-fname" name="customer-fname"
+                                       value="{{ current_user.first_name }}" readonly required/></br>
+                                <label class="px-4 col-md-2" for="customer-lname">Họ</label>
+                                <input class="col-md-4 text-center" type="text" id="customer-lname" readonly name="customer-lname"
+                                       value="{{ current_user.last_name }}" required/></br>
                             </div>
-                            <div class="d-flex flex-row mt-2">
-                                <label class="col-md-3" for="customer-birth">Ngày sinh</label>
-                                <input type="date" id="customer-birth" name="customer-birth"/>
-                                <label class="px-1" for="customer-gender">Giới tính</label>
-                                <select class="pl-1" id="customer-gender" name="customer-gender">
+                            <div class="d-flex flex-row my-3">
+                                <label class="col-md-2" for="customer-birth">Ngày sinh</label>
+                                <input class="col-md-4" type="date" id="customer-birth" name="customer-birth" value="{{ current_user.birthday }}"
+                                       readonly required/>
+                                <label class="px-4 col-md-2" for="customer-gender">Giới tính</label>
+                                <select class="col-md-4" id="customer-gender" name="customer-gender">
                                     <option id="gender-1" value="1">Nam</option>
                                     <option id="gender-2" value="2">Nữ</option>
                                     <option id="gender-3" value="3">Khác</option>
                                 </select>
                             </div>
-                            <div class="d-flex flex-row mt-2">
-                                <label class="col-md-4" for="customer-phone">Số điện thoại</label>
-                                <input class="col-md-8" id="customer-phone" type="text" maxlength="10" placeholder="098923xxx"
-                                    value="{{ current_user.phone_number }}" disabled/></br>
+                            <div class="d-flex flex-row my-3">
+                                <label class="col-md-3" for="customer-phone">Số điện thoại</label>
+                                <input class="col-md-9 text-center" id="customer-phone" type="text" maxlength="10" placeholder="098923xxx"
+                                    value="{{ current_user.phone_number }}" disabled readonly/></br>
                             </div>
-                            <div class="d-flex flex-row mt-2">
+                            <div class="d-flex flex-row my-3">
                                 <label class="col-md-3" for="order-date">Hẹn vào</label>
-                                <input class="col-md-9" id="order-date" type="datetime-local" name="order-date"/></br>
+                                <input class="col-md-9" id="order-date" type="datetime-local" name="order-date"
+                                       onchange="CheckOrderDateTime(this.id, 'alert-for-order-date')" required/></br>
                             </div>
-                            <div  class="d-flex flex-row mt-2">
+                            <span class="badge badge-danger col-md-12 ml-2" id="alert-for-order-date"></span>
+                            <div  class="d-flex flex-row my-3">
                                 <label class="col-md-3" for="customer-note">Ghi chú</label>
                                 <textarea class="col-md-9" name="customer-note" id="customer-note" maxlength="255"></textarea>
                             </div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy bỏ</button>
-                            <button type="submit" class="btn btn-success" data-dismiss="modal">Đặt hẹn</button>
+                            <button type="button" id="btn-submit-order" class="btn btn-success">Đặt hẹn</button>
                         </div>
                     </div>
                 </div>
@@ -223,7 +341,7 @@
                 để đáp ứng được sự tiện lợi của khách hàng, với dịch vụ đặt trước có thể đảm bảo được thời gian quý báu
                 của những người đến thăm khám mà không cần đặt trực tiếp tại quầy,...</p>
                 <button class="btn btn-warning" type="button" data-toggle="modal"
-                     id="bn-order-new" onclick="CheckSession(this.id)">Đặt hẹn</button>
+                     id="bn-order-new" onclick="CheckSession('{{ current_user.id }}',this.id)">Đặt hẹn</button>
             </span>
         </div>
         <!-- introduce -->
@@ -320,8 +438,9 @@
         </div>
         <!-- link to history -->
         <div id="do-you-find-your-order-history" class="text-center">
-            <span>Bạn đang tìm kiếm lịch sử giao dịch của mình. Chọn <button type="button" class="cus-button-as-link d-inline-block"
-                  data-toggle="modal" data-target="#history-lookup">XEM NGAY</button> nhé!</span>
+            <span>Bạn đang tìm kiếm lịch sử giao dịch của mình. Chọn <button type="button" class="cus-button-as-link"
+               data-toggle="modal" onclick="CheckSession('{{ current_user.id }}', this.id)"
+                            id="ba-history-lookup">XEM NGAY</button> nhé!</span>
         </div>
         <!-- lh -->
         <div id="info" class="d-flex">

@@ -1,22 +1,33 @@
 import cloudinary.uploader
 import random
-
-import requests
-from flask import render_template
+from app import CustomObject
 from app import app, db, login, client
-from app.models import Regulation
 from flask import render_template, url_for, request, redirect, jsonify
-from flask_login import login_user, logout_user, current_user
+from flask_login import login_user, logout_user, current_user, login_required
 
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    notification_code = request.args.get('notification_code')
+    if not notification_code:
+        notification_code = ''
+    if current_user.is_authenticated:
+        orders_history = utils.get_history_look_up(current_user.phone_number)
+        return render_template('index.html', current_user=current_user, orders_history=orders_history,
+                               notif=notification_code)
+    else:
+        customers_list = utils.get_customer_phone_list()
+        return render_template('index.html', customers_list=customers_list, notif=notification_code)
 
 
 @login.user_loader
 def user_load(user_id):
     return utils.get_user_by_id(user_id=user_id)
+
+
+@login.user_loader
+def customer_load(customer_id):
+    return utils.get_customer_by_id(customer_id=customer_id)
 
 
 @app.route('/admin/sign-in', methods=['get', 'post'])
@@ -102,10 +113,13 @@ def customer_login():
         otp_code = session.pop('response', None)
         otp = str(request.form.get('otp_code'))
         if otp == otp_code:
-            customer = utils.get_customer_by_phone(request.form['customerPhoneNumber'])
+            #get customer
+            customer = utils.get_accepted_customer_by_phone(request.form['customerPhoneNumber'])
             if customer:
                 login_user(user=customer)
-                return render_template('index.html')
+                return redirect(url_for('index'))
+            else:
+                return redirect(url_for('index', notification_code='noSuccessReceipt'))
     return render_template('index.html', current_phone=request.form['customerPhoneNumber'], error_code="Mã xác thực không hợp lệ.")
 
 
@@ -114,10 +128,10 @@ def otp_auth():
     if request.method.__eq__('POST'):
         otp_code = random.randrange(100000, 999999)
         if request.json:
+            phone_number = request.json['phoneNumber']
             session.modified = True
             session['response'] = str(otp_code)
             print("======================== OTP la " + str(otp_code))
-            phone_number = request.json['phoneNumber']
             ###########Enable this line to send OTP for customer validation########################
             '''message = utils.send_messages(phone_number, '[Phòng mạch Hồng Hiền Vy Tiến] Mã số xác thực của bạn là: ' + str(otp_code)
                                               + '. Xin vui lòng không chia sẻ mã số này cho ai khác kể cả nhân viên của phòng mạch.')'''
@@ -134,6 +148,7 @@ def otp_auth_again():
             session['response'] = str(otp_code)
             print("======================== AGAIN OTP la " + str(otp_code))
             phone_number = request.json['phoneNumber']
+            ###########Enable this line to send OTP for again customer validation########################
             '''message = utils.send_messages(phone_number, '[Phòng mạch Hồng Hiền Vy Tiến] Mã số xác thực của bạn là: ' + str(otp_code)
                                               + '. Xin vui lòng không chia sẻ mã số này cho ai khác kể cả nhân viên của phòng mạch.')'''
     return 'OK'
@@ -144,6 +159,33 @@ def customer_logout():
     logout_user()
     utils.session_clear('response')
     return redirect(url_for('index'))
+
+
+@app.route("/api/add-new-order", methods=['get', 'post'])
+@login_required
+def new_order_from_client():
+    if current_user.is_authenticated:
+        if request.method.__eq__('POST'):
+            first_name = current_user.first_name
+            last_name = current_user.last_name
+            birthday = current_user.birthday
+            gender_id = current_user.gender_id
+            phone_number = current_user.phone_number
+            appointment_date = datetime.now()
+            #New data
+            note = str(request.form.get('customer-note'))
+            schedules = utils.rounded_time(datetime.strptime(request.form.get('order-date'), '%Y-%m-%dT%H:%M'))
+            if not utils.check_customer_exist_on_date(schedules, phone_number):
+                if not utils.check_exist_order_at_date_time(schedules):
+                    #commit to database
+                    utils.add_new_order(first_name, last_name, birthday, phone_number, gender_id, appointment_date, note
+                                        , schedules)
+                    return redirect(url_for('index', notification_code='submitSuccess'))
+                else:
+                    return redirect(url_for('index', notification_code='ExistOne'))
+            else:
+                return redirect(url_for('index', notification_code='justOneADay'))
+    return redirect(url_for('index', notification_code='none'))
 
 
 if __name__ == '__main__':

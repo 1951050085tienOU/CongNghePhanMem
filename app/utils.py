@@ -1,6 +1,8 @@
-from datetime import datetime
-from app import app, db, client, keys
+import math
+from datetime import datetime, timedelta
+from app import app, db, CustomObject, client, keys
 from sqlalchemy.sql import func
+from sqlalchemy import orm
 from sqlalchemy.orm import session, query
 from sqlalchemy import func, extract
 from app.models import *
@@ -169,7 +171,7 @@ def used_medicine():
 
 
 def get_user_information():
-    return current_user
+    return get_user_by_id(current_user.id)
 
 
 def edit_user_information(user_id, first_name, last_name, birthday, phone_number, gender):
@@ -220,16 +222,21 @@ def luot_kham(date):
 
 
 def reformat_phone_number(phone_number):
-    phone_number = str(phone_number)
-    print(phone_number)
-    #only in vietnam
-    if phone_number.startswith('84') and phone_number.__len__() == 11:
+    if phone_number[:1] == '84' and len(phone_number) == 11:
         return '+' + phone_number
-    elif phone_number.startswith('0') and phone_number.__len__() == 10:
+    elif phone_number[0] == '0' and len(phone_number) == 10:
         return '+84' + phone_number[1:]
     else:
         return 0
 
+
+def reformat_0_phone_number(phone_number):
+    if phone_number[0] == '0' and len(phone_number) == 10:
+        return phone_number
+    elif phone_number[:1] == '84' and len(phone_number) == 11:
+        return '0' + phone_number[2:]
+    else:
+        return 0
 
 def send_messages(to_phone, content):
     to_phone = reformat_phone_number(to_phone)
@@ -241,7 +248,190 @@ def send_messages(to_phone, content):
 
 
 def get_customer_by_phone(phone_number):
-    return Customer.query.filter(Customer.phone_number.__eq__(phone_number)).first()
+    return Customer.query.filter(Customer.phone_number.__eq__(phone_number)).order_by(Customer.id.desc()).first()
+
+
+def get_accepted_customer_by_phone(phone_number): ################################
+    return db.session.query(Customer).filter(Customer.phone_number == phone_number, Customer.id == Receipt.customer_id,
+                                             Receipt.medical_bill == MedicalBill.id).order_by(Customer.appointment_date.
+                                                                                              desc()).first()
+
+
+def get_customer_by_id(customer_id):
+    return Customer.query.get(customer_id)
+
+
+def add_new_order(first_name, last_name, birthday, phone_number, gender_id, appointment_date, note, ordered_date):
+    #new Schedule
+    schedule = Schedule(examination_date=ordered_date)
+    db.session.add(schedule)
+
+    #order in Customer
+    customer = Customer(first_name=first_name, last_name=last_name, birthday=birthday, phone_number=phone_number,
+                        gender_id=gender_id, appointment_date=appointment_date, note=note)
+    db.session.add(customer)
+
+    db.session.commit()
+
+    #customer schedule
+    customer_sche = CustomerSche(schedule_id=schedule.id, customer_id=customer.id)
+    db.session.add(customer_sche)
+    db.session.commit()
+
+
+def get_order_history(phone_number):
+    return db.session.query(Customer).filter(Customer.phone_number == phone_number).all()
+
+
+def get_bill_history(phone_number):
+    return_value = []
+    joined_order_customer = db.session.query(MedicalBill.id).filter(Customer.phone_number == phone_number, Customer.id
+                                                                    == Receipt.customer_id, Receipt.medical_bill ==
+                                                                    MedicalBill.id).all()
+    if joined_order_customer:
+        for obj in range(len(joined_order_customer)):
+            return_value.append(joined_order_customer[obj][0])   #[bill_id_1, bill_id_2, bill_id_3]
+
+    return return_value
+
+
+def get_medical_bill_by_id(medical_bill_id):
+    return MedicalBill.query.get(medical_bill_id)
+
+
+def get_receipt_by_id(receipt_id):
+    return Receipt.query.get(receipt_id)
+
+
+def get_customer_phone_list():
+    customers = db.session.query(Customer.phone_number).group_by(Customer.phone_number).all()
+    list_cutted_phone_number = []
+    for customer in customers:
+        list_cutted_phone_number.append(str(customer)[-7:-3])
+    return list_cutted_phone_number
+
+
+def get_history_look_up(phone_number):
+    orders_history = []
+    orders = get_order_history(phone_number)
+    for order in orders:
+        new_obj = CustomObject.CustomObjectHistoryMedicalBill()
+        new_obj.name = order.first_name + ' ' + order.last_name
+        new_obj.ordered_date = order.appointment_date
+        if order.receipts:
+            new_obj.disease_diagnostic = get_medical_bill_by_id(order.receipts[0].medical_bill).diagnostic_disease
+            new_obj.order_state = order.receipts
+        new_obj.was_scheduled = order.was_scheduled
+
+        orders_history.append(new_obj)
+
+    return orders_history
+
+
+def rounded_time(date_time): #10 minutes for each order time
+    hour = date_time.hour
+    minute = date_time.minute
+    if minute < 55:
+        math_minute = minute % 10
+        if math_minute < 5:
+            minute -= math_minute
+        else:
+            minute += 10 - math_minute
+    else:
+        return date_time + timedelta(hour=+1, minutes=-minute)
+
+    return date_time.replace(hour=hour, minute=minute, second=0)
+
+
+def get_sat_in_date(date):
+    if date is datetime:
+        date = date.date()
+    return_value = []
+    list_order = db.session.query(Schedule.examination_date).filter(extract('day', Schedule.examination_date) == date.day,
+                                                              extract('month', Schedule.examination_date) == date.month,
+                                                              extract('year', Schedule.examination_date) == date.year)\
+        .order_by(Schedule.examination_date).all()
+    if list_order:
+        for item in list_order:
+            return_value.append(item[0])
+    return return_value      #[datetime1, datetime2, datetime3,...] in the same date
+
+
+def get_date_from_to(from_date, to_date):
+    if from_date is datetime:
+        from_date = from_date.date()
+    if to_date is datetime:
+        to_date = to_date.date()
+    if from_date >= to_date:
+        return from_date
+
+    list_date = []
+    while from_date != to_date:
+        list_date.append(from_date)
+        from_date = from_date + timedelta(days=+1)
+    return list_date
+
+
+def get_not_free_order_time():
+    #js checked khung ngày giờ còn trống trong khoảng 1.5 ngày tính từ (now + 1/24) ngày, không đăng ký vào break time
+    #min (+ 1.5) ||||||| max (36 -) (hours)
+    #check in 37 hours for time loss reservation
+    current_date_time_seconds = datetime.now().timestamp()
+    from_date_time = datetime.fromtimestamp(current_date_time_seconds + 1.5 * 60 ** 2)          #current + 1.5 hours
+    to_date_time = datetime.fromtimestamp(current_date_time_seconds + 37 * 60 ** 2)             #current + 37 hours
+
+    #date need to check
+    from_date = from_date_time.date()
+    to_date = to_date_time.date()
+    list_date_need_to_check = get_date_from_to(from_date, to_date)
+
+    #list free oder time (order sat)
+    list_free_order_time = {}
+    for date_check in list_date_need_to_check:
+
+        list_date_not_free = get_sat_in_date(date_check.date())
+
+        list_not_free = []
+
+        count = 0
+        list_length = len(list_date_not_free)
+        while count in range(count, list_length):
+            count_j = count + 1
+            new_obj = CustomObject.CustomObjectTimeFree()
+            new_obj.hour = list_date_not_free[count].hour
+            new_obj.minute.append(list_date_not_free[count].minute)
+            while count_j in range(count_j, list_length):
+                if new_obj.hour == list_date_not_free[count_j].hour:
+                    new_obj.minute.append(list_date_not_free[count_j].minute)
+                    count_j += 1
+                else:
+                    if count_j - count > 1:
+                        count = count_j - 2
+                    break
+            list_not_free.append(new_obj)
+            count += 1
+
+        list_free_order_time[date_check.strftime("%Y-%m-%d")] = list_not_free
+
+    return list_free_order_time      #{key_date : [<obj1>,<obj2>,<obj3>,<obj4>,...]}   <obj1> = {hour=x, minute=[]}
+
+
+def check_exist_order_at_date_time(date_time):
+    list_orders = get_sat_in_date(date_time.date())
+    for order in list_orders:
+        if date_time.hour == order.hour and date_time.minute == order.minute:
+            return True     #exist
+
+    return False   #not exist
+
+
+def check_customer_exist_on_date(date_time, phone_number):
+    check_exist = db.session.query(Schedule.examination_date).filter(Customer.phone_number == phone_number, Customer.id
+                                                                     == CustomerSche.customer_id, CustomerSche.
+                                                                     schedule_id == Schedule.id).first()
+    if check_exist:
+        return True   #exist
+    return False      #not_exist
 
 
 def session_clear(key):

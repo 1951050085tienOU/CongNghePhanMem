@@ -202,6 +202,14 @@ div.background-below-text {
     background-color: rgba(218, 165, 20, 0.2);
     padding: 2%;
 }
+#history-lookup {
+    border: 1px solid black;
+}
+.cus-header-modal {
+    width: 75%;
+    padding-left: 39%;
+    font-size: 35pt;
+}
 
 /* FOOTER */
 footer {

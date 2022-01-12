@@ -1,5 +1,5 @@
 from app import db, app
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float, Enum, ForeignKey
+from sqlalchemy import Column, Integer, String, Date, Boolean, Float, Enum, ForeignKey, DateTime
 from sqlalchemy.orm import relationship, backref
 from datetime import datetime
 from enum import Enum as ENUM
@@ -47,7 +47,7 @@ class Person(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     first_name = Column(String(10), nullable=False)
     last_name = Column(String(50))
-    birthday = Column(DateTime, nullable=False)
+    birthday = Column(Date, nullable=False)
     phone_number = Column(String(20), nullable=False)
     gender_id = Column(Enum(Gender))
     @declared_attr
@@ -86,6 +86,7 @@ class Customer(Person, UserMixin):
                          Column('customer_id', Integer, ForeignKey(Customer.id), nullable=False, primary_key=True),
                          Column('schedule_id', Integer, ForeignKey('schedule.id'), nullable=False, primary_key=True),
                          Column('examined', Boolean, default=False))  #lịch đó đã được khám xong -> True)'''
+
 
 class CustomerSche(db.Model):
     customer_id = Column(Integer, ForeignKey(Customer.id), nullable=False, primary_key=True)
@@ -161,6 +162,7 @@ class Receipt(db.Model):
     medical_bill = Column(Integer, ForeignKey('medical_bill.id'), nullable=False)
     customer_id = Column(Integer, ForeignKey('customer.id'), nullable=False)
     user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
+
 
 class Regulation(db.Model):
     __tablename__ = 'regulation'

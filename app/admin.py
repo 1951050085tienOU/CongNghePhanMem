@@ -173,7 +173,7 @@ class AccountSet(ModelAuthenticated):
             user_first_name = user.first_name
             user_last_name = user.last_name
             user_phone = user.phone_number
-            user_age = datetime.today().year - user.birthday.date().year
+            user_age = datetime.today().year - user.birthday.year
             user_gender_id = user_gender[user.gender_id.name]
             if user.avatar:
                 user_avatar = user.avatar
@@ -182,7 +182,7 @@ class AccountSet(ModelAuthenticated):
 
             return self.render('admin/account_set.html', user_id=user_id, user_role=user_role_vi[user_role],
                                user_first_name=user_first_name, user_last_name=user_last_name, user_phone=user_phone,
-                               user_age=user_age, user_avatar=user_avatar, user_birth=user.birthday.date(),
+                               user_age=user_age, user_avatar=user_avatar, user_birth=user.birthday,
                                user_gender=str(user_gender_id))
         else:     #mode thay đổi mật khẩu)
             return self.render('admin/change_password.html', current_password=user.password)
