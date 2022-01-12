@@ -6,10 +6,12 @@ from enum import Enum as ENUM
 from sqlalchemy.ext.declarative import declared_attr
 from flask_login import UserMixin
 
+
 class Gender(ENUM):
     NAM = 1
     NU = 2
     KHAC = 3
+
 
 class Province(db.Model):
     __tablename__ = 'province'
