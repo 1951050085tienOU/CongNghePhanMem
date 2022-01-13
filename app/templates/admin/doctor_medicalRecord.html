@@ -1,0 +1,54 @@
+{% extends 'admin/base.html' %}
+
+{% block body %}
+    <div style="border: 1px solid lightgray">
+        <h3 class="p-2">Xem phiếu khám</h3>
+        <div class="row d-flex justify-content-center pt-4">
+            <div class="justify-content-left">
+                <form class="container" action="" method="get">
+                    <div class="row d-flex justify-content-left">
+                        <label class="pr-5" for="customer_name" style="display: inline-block">Tên khách hàng:</label>
+                        <input style="margin:15px" name="customer_name" type="text" class="form-control" placeholder="Nhap ten khach hang" id="customer_name">
+                    </div>
+                    <div class="row d-flex justify-content-left">
+                        <label for="maPhieuKham">Mã phiếu khám:</label>
+                        <input style="margin:15px" name="maPhieuKham" type="text" class="form-control" placeholder="Nhap ma phieu kham" id="maPhieuKham">
+                    </div>
+                    <div class="row d-flex justify-content-left">
+                        <label for="phoneNumber" >Số điện thoại:</label>
+                        <input style="margin:15px" name="phoneNumber" type="text" class="form-control" placeholder="Nhap so dien thoai" id="phoneNumber">
+                    </div>
+                    <div class='pb-3' style="padding: 5px 0; display: flex; justify-content: flex-end;">
+                       <button class="row d-flex justify-content-right" style="margin:15px" id="search_customer" type="submit">Tìm kiếm</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="container">
+          {% if search_customers %}
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>
+                    <button type="button" style="height:100%" class="btn btn-outline-light text-dark"><b>Tên</b></button>
+                </th>
+                <th>
+                    <button type="button" class="btn btn-outline-light text-dark"><b>Tuổi</b></button>
+                </th>
+                <th> <button type="button" class="btn btn-outline-light text-dark"><b>Ngày tháng</b></button> </th>
+                <th> <button type="button" class="btn btn-outline-light text-dark"><b>Nội dung khám</b></button> </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{{ search_customers.first_name +" "+ search_customers.last_name }}</td>
+                <td>{{ now.year - search_customers.birthday.year }}</td>
+                <td>{{ search_customers.appointment_date }}</td>
+                <td>{{" "}}</td>
+              </tr>
+          {% endif %}
+            </tbody>
+          </table>
+        </div>
+    </div>
+{% endblock %}

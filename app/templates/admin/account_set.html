@@ -53,6 +53,7 @@
                                 </div>
                                   <div class="d-row d-md-flex py-2">
                                     <label class="col-md-4" style='text-align: left !important' for="gender">Giới tính</label>
+                                    {% if user_gender %}
                                     <div>
                                         <input id="gender-male" type="radio" name="gender" value="{{ user_gender['NAM'] }}"/>
                                         <label for="gender-male">Nam</label>
@@ -61,6 +62,7 @@
                                         <input id="gender-other" type="radio" name="gender" value="{{ user_gender['KHAC'] }}"/>
                                         <label for="gender-other">Khác</label>
                                     </div>
+                                    {% endif %}
 
 
                                 </div>

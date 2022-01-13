@@ -3,10 +3,10 @@ from datetime import datetime, timedelta
 from app import app, utils, db
 from flask_admin import Admin, AdminIndexView, expose, BaseView
 from flask_admin.contrib.sqla import ModelView
-from flask_admin.menu import  MenuLink
+from flask_admin.menu import MenuLink
 from app.models import Medicine, Regulation, MedicineType
 from flask_login import current_user
-from app.models import UserRole, Gender
+from app.models import UserRole, Gender, MedicalBill, Medicine
 from flask import request, session, url_for, redirect
 from flask_login import logout_user
 
@@ -26,10 +26,18 @@ class ModelAuthenticated(BaseView):
                 return True
         return False
 
+class ManagerView(BaseView):
+    def is_accessible(self):
+        return current_user.is_authenticated and str(current_user.user_role).__eq__('UserRole.MANAGER')
+
+class DoctorView(BaseView):
+    def is_accessible(self):
+        return current_user.is_authenticated and str(current_user.user_role).__eq__('UserRole.DOCTOR')
 
 class General(AdminIndexView, ModelAuthenticated):
     @expose('/')
     def index(self):
+        userrole = utils.KiemTraRole(current_user)
         us = utils.get_user_information()
         #thống kê doanh thu tổng quát
         revenue_statistics = [] #danh sách chứa dữ liệu thống kê
@@ -54,13 +62,34 @@ class General(AdminIndexView, ModelAuthenticated):
                 else:
                     medicine_name.append('Others')
                 medicine_percent.append(percent_record[count + 1])
+
+        """Tổng quan của bác sĩ"""
+        #Bệnh nhân hiện tại
+        customer_now = utils.BenhNhanHienTai(23)
+
+        #Lịch hẹn ngày
+        customers_today = utils.LichHenNgay(23)
+
+        #Thống Kê bệnh nhân
+        patient_stats = utils.ThongKeBenhNhan(23)
+
+        #Danh sách Bệnh nhân
+        patient_list = utils.DanhSachBenhNhan(23)
+        now = datetime.now()
+
+        #Tra cứu
+        search_customer = utils.load_customers(request.args.get('customer_name'), request.args.get('phoneNumber'))
+
         return self.render('admin/general.html', revenue_statistics=revenue_statistics, list_of_months=pre_months,
                            medicine_statistics_name=medicine_name, medicine_statistics_percent=medicine_percent,
                            max_customer=max_customer, medical_fee=medical_fee, ordered_today=ordered_today,
-                           ordered_tomorrow=ordered_tomorrow, us=us)
+                           ordered_tomorrow=ordered_tomorrow, us=us, userrole=userrole,
+                           customer_now = customer_now, customers_today = customers_today, patient_stats = patient_stats,
+                           patient_list=patient_list, now = now,search_customer=search_customer)
 
 
-class ManagerStatistics(ModelAuthenticated):
+
+class ManagerStatistics(ManagerView):
     @expose('/')
     def __index__(self):
         month = request.args.get('month', datetime.now().month)
@@ -84,7 +113,7 @@ class ManagerStatistics(ModelAuthenticated):
                            thuoc_da_dung=utils.thuoc_da_dung(), types=types, type=type)
 
 
-class ManagementMedicine(ModelAuthenticated):
+class ManagementMedicine(ManagerView):
     can_view_details = True
     can_delete = False
     column_searchable_list = (Medicine.id, Medicine.name)
@@ -107,14 +136,14 @@ class ManageMedicine(ModelView):
     can_delete = True
 
 
-class Management(ModelAuthenticated):
+class Management(ManagerView):
 
     @expose('/')
     def __index__(self):
         return self.render('admin/management.html')
 
 
-class ManagerRegulation(ModelAuthenticated):
+class ManagerRegulation(ManagerView):
     @expose('/')
     def __index__(self):
         reg = utils.get_regulation()  # lấy quy định
@@ -150,26 +179,26 @@ class AccountSet(ModelAuthenticated):
             'DOCTOR': 'Bác sĩ',
             'OTHER': 'Nhân viên'
         }
-        user_gender = {
+        """user_gender = {
             'NAM': 1,
             'NU': 2,
             'KHAC': 3
-        }
+        }"""
         user_id = user.id
         user_role = user.user_role.name
         user_first_name = user.first_name
         user_last_name = user.last_name
         user_phone = user.phone_number
         user_age = datetime.today().year - user.birthday.date().year
-        user_gender_id = user_gender[user.gender_id.name]
+        #user_gender_id = user_gender[user.gender_id.name]
         if user.avatar:
             user_avatar = user.avatar
         else:
             user_avatar = url_for('static', filename='avatar/default.jpg')
         return self.render('admin/account_set.html', user_id=user_id, user_role=user_role_vi[user_role],
                            user_first_name=user_first_name, user_last_name=user_last_name, user_phone=user_phone,
-                           user_age=user_age, user_avatar=user_avatar, user_birth=user.birthday.date(),
-                           user_gender=user_gender_id)
+                           user_age=user_age, user_avatar=user_avatar, user_birth=user.birthday.date())
+                            #, user_gender_id=user_gender[user_gender_id])
 
 class LogOutUser(BaseView):
     @expose('/')
@@ -178,12 +207,33 @@ class LogOutUser(BaseView):
 
         return redirect('/admin/sign-in')
 
+class CreateMedicalBill(DoctorView):
+    @expose('/')
+    def __index__(self):
+        symptom_available = MedicalBill.query.all()
+        medical_name = Medicine.query.all()
+
+
+        return self.render('admin/doctor_medicalBill.html', symptom_available=symptom_available, medical_name=medical_name)
+
+class SeeMedicalRecord(DoctorView):
+    @expose('/')
+    def __index__(self):
+        # Tra cứu
+        now = datetime.now()
+        search_customers = utils.load_customers(request.args.get('customer_name'), request.args.get('maPhieuKham'), request.args.get('phoneNumber'))
+
+        return self.render('admin/doctor_medicalRecord.html', search_customers=search_customers, now=now)
 
 
 admin = Admin(app=app, template_mode='Bootstrap4', name='PHÒNG MẠCH',
               index_view=General(name="Tổng quan"))
 
 admin.add_view(ManagerStatistics(name='Thống kê'))
+
+admin.add_view(CreateMedicalBill(name='Lập phiếu'))
+admin.add_view(SeeMedicalRecord(name='Xem phiếu khám'))
+
 #medicine quản lý
 admin.add_view(ManageMedicine(Medicine, db.session, category="Quản lý", name='Kho thuốc'))
 admin.add_view(ManageMedicine(MedicineType, db.session, category="Quản lý", name='Kho đơn vị'))

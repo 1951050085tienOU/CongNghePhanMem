@@ -204,3 +204,52 @@ def luot_kham(date):
     #Số lượt khám còn lại
     customers[2] = (customers[0] - customers[1])
     return customers
+
+def KiemTraRole(user):
+    return str(user.user_role)
+
+def LichHenNgay(date):
+    return Customer.query.join(CustomerSche, CustomerSche.customer_id.__eq__(Customer.id))\
+        .join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+        .filter(extract('day', Schedule.examination_date) == date).all()
+
+def BenhNhanHienTai(date):
+    return Customer.query.join(CustomerSche, CustomerSche.customer_id.__eq__(Customer.id)) \
+        .join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id)) \
+        .filter(extract('day', Schedule.examination_date) == date, CustomerSche.examined == False).first()
+
+def ThongKeBenhNhan(date):
+    customers = [0, 0, 0]
+    # Số bênh nhân
+    customers[0] = len(CustomerSche.query.join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+                       .filter(extract('day', Schedule.examination_date) == date).all())
+    # Số bênh nhân đã khám
+    customers[1] = len(CustomerSche.query.join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+                       .filter(extract('day', Schedule.examination_date) == date, CustomerSche.examined == True).all())
+    # Số bệnh nhân chưa khám
+    customers[2] = (customers[0] - customers[1])
+    return customers
+
+def DanhSachBenhNhan(date):
+    # return db.session.query(Customer.first_name, extract('year',Customer.birthday), extract('day', Schedule.examination_date))\
+    #         .join(CustomerSche, CustomerSche.customer_id.__eq__(Customer.id)).join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+    #         .filter(extract('day', Schedule.examination_date) == date)\
+    #         .group_by(Customer.first_name).all()
+    return Customer.query.join(CustomerSche, CustomerSche.customer_id.__eq__(Customer.id)).join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+            .filter(extract('day', Schedule.examination_date) == date).add_columns(Schedule.examination_date).all()
+
+def load_customers(name=None, phone=None, codeMedicalBill=None):
+    kq = {}
+    if name:
+        for p in Customer.query.all():
+            if p.first_name.strip().__eq__(name.strip()):
+                kq = p
+    if phone:
+        for p in Customer.query.all():
+            if p.phone_number.strip().__eq__(phone.strip()):
+                kq = p
+    if codeMedicalBill:
+        for p in MedicalBill.query.all():
+            if p.id.strip().__eq__(codeMedicalBill.strip()):
+                kq = p
+    return kq

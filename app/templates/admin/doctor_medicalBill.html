@@ -1,0 +1,117 @@
+{% extends 'admin/base.html' %}
+
+{% block body %}
+    <div class="container" style="border: 1px solid lightgray">
+        <h3 class="pt-3" style="font-weight: normal">Lập phiếu khám</h3>
+        <form class="form-inline col-md-12">
+            <div class="col-md-6 row">
+                <label for="customer_name">Tên khách hàng:</label>
+                <input style="margin:15px; border-color:red" name="customer_name" type="text" class="form-control" placeholder="Nhap ten khach hang" required id="customer_name">
+            </div>
+            <div class="col-md-6 row">
+                <label for="phoneNumber" >Số điện thoại:</label>
+                <input style="margin:15px; border-color:red" name="phoneNumber" type="text" class="form-control" placeholder="Nhap so dien thoai" required id="phoneNumber">
+            </div>
+        </form>
+        <div class="form-inline col-md-12" style="margin:15px">
+            <div class="col-md-4 row">
+                <label for="age">Tuổi:</label>
+                <input style="margin:15px" name="age" type="text" class="form-control" placeholder="Nhap tuoi" id="age">
+            </div>
+            <div class="col-md-4 row">
+                <label for="gender" >Giới tính:</label>
+                <input style="margin:15px" name="gender" type="text" class="form-control" placeholder="Nhap gioi tinh" id="gender">
+            </div>
+            <div class="col-md-4 row">
+                <label for="maPhieuKham">Mã phiếu:</label>
+                <input style="margin:15px" name="maPhieuKham" type="text" class="form-control" placeholder="Nhap ma phieu kham" id="maPhieuKham">
+            </div>
+        </div>
+        <div class="input-group mt-3 mb-3">
+          <label>Triệu chứng: &ensp;</label>
+          <input type="text" id="symptom" class="form-control" placeholder=" ">
+          <div class="input-group-prepend">
+            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown">
+              Tìm
+            </button>
+            {% for s in symptom_available %}
+            <div class="dropdown-menu">
+              <a class="dropdown-item" href="#">{{ s.symptom }}</a>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="input-group mt-3 mb-3">
+          <label>Chuẩn đoán: &ensp;</label>
+          <input type="text" class="form-control" placeholder=" ">
+          <div class="input-group-prepend">
+            <button type="button" id="diagnostic_disease" class="btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown">
+              Tìm
+            </button>
+            {% for s in symptom_available %}
+            <div class="dropdown-menu">
+              <a class="dropdown-item" href="#">{{ s.diagnostic_disease }}</a>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="input-group mt-3 mb-3">
+          <label>Toa thuốc: &ensp;</label>
+          <input type="text" class="form-control" placeholder="Nhap ten thuoc">
+          <div class="input-group-prepend">
+            <button type="button" id="medicine_name" class="btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown">
+              Tìm
+            </button>
+            {% for m in medical_name %}
+            <div class="dropdown-menu">
+              <a class="dropdown-item" href="#">{{ m.diagnostic_disease }}</a>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class='pb-3' style="padding: 5px 0; margin:15px; display: flex; justify-content: flex-end;">
+            <button class="row d-flex justify-content-right" id="regulation-submit"
+                   type="submit">Thêm</button>
+        </div>
+        <div class="container">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>
+                    <button type="button" style="height:100%" class="btn btn-outline-light text-dark"><b>Mã loại thuốc</b></button>
+                </th>
+                <th>
+                    <button type="button" class="btn btn-outline-light text-dark"><b>Tên thuốc</b></button>
+                </th>
+                <th> <button type="button" class="btn btn-outline-light text-dark"><b>Số lượng</b></button> </th>
+                <th> <button type="button" class="btn btn-outline-light text-dark"><b>Cách dùng</b></button> </th>
+              </tr>
+            </thead>
+            <tbody>
+                  <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td>
+                        <div class="input-group">
+                          <input type="text" id="how_to_use" class="form-control" placeholder="Cach dung...">
+                        </div>
+                    </td>
+                  </tr>
+            </tbody>
+          </table>
+        </div>
+    </div>
+    <script>
+        let inputName = document.querySelector('#customer_name');
+        let inputPhone = document.querySelector('#phoneNumber');
+        let inputAge = document.querySelector('#age');
+        let inputGender = document.querySelector('#gender');
+        let inputMaPhieu = document.querySelector('#maPhieuKham');
+        let inputSymptom = document.querySelector('#symptom');
+        let inputdiag = document.querySelector('#diagnostic_disease');
+        let inputHowUse = document.querySelector('#how_to_use');
+        let inputmedname = document.querySelector('#medicine_name');
+
+    </script>
+{% endblock %}

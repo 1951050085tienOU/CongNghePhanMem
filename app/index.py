@@ -1,5 +1,5 @@
 from app import app, db, login
-from app.models import Regulation
+from app.models import Regulation, MedicalBillDetail, Person
 from flask import render_template, url_for, request, redirect, session, jsonify
 from flask_login import login_user, logout_user, current_user
 
@@ -47,6 +47,48 @@ def add_new_regulation():
 
     return
 
+def add_new_medicalBill():
+    customer_names = request.form.get('new_customer_name')
+    phoneNumbers = request.form.get('new_phoneNumber')
+    ages = request.form.get('new_age')
+    genders = request.form.get('new_gender')
+    maPhieuKhams = request.form.get('new_maPhieuKham')
+    symptoms = request.form.get('new_symptom')
+    diagnostic_diseases = request.form.get('new_diagnostic_disease')
+    how_to_uses = request.form.get('new_how_to_use')
+    medicine_names = request.form.get('new_medicine_name')
+
+    all_med = db.session.query(MedicalBill).all()
+    for med in all_med:
+        med.id = med.id + 1
+        db.session.add(med)
+    news = MedicalBill(id=1, symptom=symptoms, diagnostic_disease=diagnostic_diseases)
+    db.session.add(news)
+    db.session.commit()
+
+    all_med = db.session.query(Medicine).all()
+    for med in all_med:
+        med.id = med.id + 1
+        db.session.add(med)
+    news = Medicine(id=1, name=medicine_names)
+    db.session.add(news)
+    db.session.commit()
+
+    all_med = db.session.query(MedicalBillDetail).all()
+    for med in all_med:
+        med.id = med.id + 1
+        db.session.add(med)
+    news = MedicalBillDetail(how_to_use=how_to_uses)
+    db.session.add(news)
+    db.session.commit()
+
+    all_med = db.session.query(Person).all()
+    for med in all_med:
+        med.id = med.id + 1
+        db.session.add(med)
+    news = Person(first_name=customer_names)
+    db.session.add(news)
+    db.session.commit()
 
 if __name__ == '__main__':
     pre_user = None

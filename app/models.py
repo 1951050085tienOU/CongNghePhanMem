@@ -171,7 +171,8 @@ class Regulation(db.Model):
 
 
 if __name__ == "__main__":
-    p1 = Province(name='Hồ Chí Minh')
+
+    """p1 = Province(name='Hồ Chí Minh')
     d1 = District(name='Quận 1', province_id=1)
     d2 = District(name='Quận 2', province_id=1)
     db.session.add(p1)
@@ -200,6 +201,6 @@ if __name__ == "__main__":
     db.session.add(s1)
     r1 = Regulation()
     db.session.add(r1)
-    db.session.commit()
+    db.session.commit()"""
     db.create_all()
 
