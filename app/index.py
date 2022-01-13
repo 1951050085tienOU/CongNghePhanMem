@@ -145,6 +145,33 @@ def customer_logout():
     utils.session_clear('response')
     return redirect(url_for('index'))
 
+@app.route("/admin/createmedicalbill", methods=['post'])
+def load_medicalbill():
+    data = request.json
+    sdt = data.get('sdt')
+    try:
+        p = utils.tim_khach_hang(sdt=sdt)
+    except:
+        return {'status': 404, 'err_msg' :'Lỗi hệ thống'}
+
+    if p:
+        if str(p.gender_id).__eq__('Gender.NU'):
+            gender = 'Nữ'
+        else:
+            if str(p.gender_id).__eq__('Gender.NAM'):
+                gender = 'Nam'
+            else:
+                gender = 'Khác'
+
+    return {'status': 201, 'patient': {
+        'id':p.id,
+        'first_name': p.first_name,
+        'last_name': p.last_name,
+        'age': datetime.now().year - p.birthday.year,
+        'gender': gender,
+        'phone_number': p.phone_number
+    }}
+
 if __name__ == '__main__':
     pre_user = None
     from admin import *

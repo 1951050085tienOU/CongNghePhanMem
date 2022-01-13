@@ -250,7 +250,77 @@ def send_messages(to_phone, content):
 def get_customer_by_phone(phone_number):
     return Customer.query.filter(Customer.phone_number.__eq__(phone_number)).first()
 
-
 def session_clear(key):
      if key in session:
          del session[key]
+
+def luot_kham(date):
+    customers = [0, 0, 0]
+    #Số lượt khám tối đa
+    customers[0] = Regulation.query.filter(extract('day', Regulation.created_date).__le__(date)).all()[-1].customer_quantity
+    # Số lượt khám đã hẹn
+    customers[1] = len(CustomerSche.query.join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+                                .filter(extract('day', Schedule.examination_date) == date).all())
+    #Số lượt khám còn lại
+    customers[2] = (customers[0] - customers[1])
+    return customers
+
+def KiemTraRole(user):
+    return str(user.user_role)
+
+def LichHenNgay(date):
+    return Customer.query.join(CustomerSche, CustomerSche.customer_id.__eq__(Customer.id))\
+        .join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+        .filter(extract('day', Schedule.examination_date) == date).all()
+
+def BenhNhanHienTai(date):
+    return Customer.query.join(CustomerSche, CustomerSche.customer_id.__eq__(Customer.id)) \
+        .join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id)) \
+        .filter(extract('day', Schedule.examination_date) == date, CustomerSche.examined == False).first()
+
+def ThongKeBenhNhan(date):
+    customers = [0, 0, 0]
+    # Số bênh nhân
+    customers[0] = len(CustomerSche.query.join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+                       .filter(extract('day', Schedule.examination_date) == date).all())
+    # Số bênh nhân đã khám
+    customers[1] = len(CustomerSche.query.join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+                       .filter(extract('day', Schedule.examination_date) == date, CustomerSche.examined == True).all())
+    # Số bệnh nhân chưa khám
+    customers[2] = (customers[0] - customers[1])
+    return customers
+
+def DanhSachBenhNhan(date):
+    # return db.session.query(Customer.first_name, extract('year',Customer.birthday), extract('day', Schedule.examination_date))\
+    #         .join(CustomerSche, CustomerSche.customer_id.__eq__(Customer.id)).join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+    #         .filter(extract('day', Schedule.examination_date) == date)\
+    #         .group_by(Customer.first_name).all()
+    return Customer.query.join(CustomerSche, CustomerSche.customer_id.__eq__(Customer.id)).join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+            .filter(extract('day', Schedule.examination_date) == date).add_columns(Schedule.examination_date).all()
+
+def load_customers(name=None, phone=None, codeMedicalBill=None):
+    kq = {}
+    if name:
+        for p in Customer.query.all():
+            if p.first_name.strip().__eq__(name.strip()):
+                kq = p
+    if phone:
+        for p in Customer.query.all():
+            if p.phone_number.strip().__eq__(phone.strip()):
+                kq = p
+    if codeMedicalBill:
+        for p in MedicalBill.query.all():
+            if p.id.strip().__eq__(codeMedicalBill.strip()):
+                kq = p
+    return kq
+
+def tim_khach_hang(sdt, **kwargs):
+    return Customer.query.filter(Customer.phone_number.__eq__(sdt)).first()
+
+def lich_su_kham(customer_id):
+    return MedicalBill.query.join(CustomerSche, MedicalBill.customer_sche.__eq__(CustomerSche.id)).\
+        join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id)).add_columns(Schedule.examination_date)\
+        .join(Customer, CustomerSche.customer_id.__eq__(Customer.id))\
+        .filter(CustomerSche.customer_id.__eq__(customer_id)).add_columns(Customer.first_name)\
+        .add_columns(Customer.last_name).add_columns(extract('year', Customer.birthday)).group_by(MedicalBill.id)\
+        .order_by(MedicalBill.id).all()
