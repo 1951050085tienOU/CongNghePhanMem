@@ -64,25 +64,16 @@ class General(AdminIndexView, ModelAuthenticated):
 class ManagerStatistics(ModelAuthenticated):
     @expose('/')
     def __index__(self):
-        month = request.args.get('month', datetime.now().month)
+        now = datetime.now()
+        month = request.args.get('month', now.month)
+        year = request.args.get('year', now.year)
         doanhthu = request.args.get('doanhthu', 5000000)
-        types = [{
-            'value': 'line',
-            'text': 'Đường'
-        }, {
-            'value': 'bar',
-            'text': 'Cột'
-        }, {
-            'value': 'pie',
-            'text': 'Tròn'
-        }]
-        type = request.args.get('chart')
         return self.render('admin/manager_statistics.html',
-                           revenue_stats=utils.revenue_stats(month=month, doanhthu=doanhthu),
-                           examination_stats=utils.examination_stats(month=month),
-                           medicine_stats=utils.medicine_stats(), thuoc_bo_sung=utils.thuoc_bo_sung(),
+                           revenue_stats=utils.revenue_stats(month=month, year=year, doanhthu=doanhthu),
+                           examination_stats=utils.examination_stats(month=month, year=year),
+                           medicine_stats=utils.medicine_stats(month=month, year=year), thuoc_bo_sung=utils.thuoc_bo_sung(),
                            thuoc_het_sl=utils.thuoc_het_sl(), thuoc_ton_kho=utils.thuoc_ton_kho(),
-                           thuoc_da_dung=utils.thuoc_da_dung(), types=types, type=type)
+                           thuoc_da_dung=utils.thuoc_da_dung(), now=now, month=month, year=year)
 
 
 class ManagementMedicine(ModelAuthenticated):
@@ -106,6 +97,7 @@ class ManageMedicine(ModelView):
     can_edit = True
     can_create = True
     can_delete = True
+    can_export = True
     column_labels = {
         'name': 'Tên',
         'quantity': 'Số lượng',
@@ -200,11 +192,9 @@ admin = Admin(app=app, template_mode='Bootstrap4', name='PHÒNG MẠCH',
               index_view=General(name="Tổng quan"))
 
 admin.add_view(ManagerStatistics(name='Thống kê'))
-#medicine quản lý
 admin.add_view(ManageMedicine(Medicine, db.session, category="Quản lý", name='Kho thuốc'))
 admin.add_view(ManageMedicine(MedicineType, db.session, category="Quản lý", name='Kho đơn vị'))
 admin.add_sub_category(parent_name="Quản lý", name="ManageMedicine")
-
 admin.add_sub_category(name="Links", parent_name="Team")
 admin.add_view(ManagerRegulation(name='Quy định'))
 admin.add_view(AccountSet(name='Tài khoản'))

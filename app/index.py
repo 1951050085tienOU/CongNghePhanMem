@@ -145,7 +145,6 @@ def customer_logout():
     utils.session_clear('response')
     return redirect(url_for('index'))
 
-
 if __name__ == '__main__':
     pre_user = None
     from admin import *
