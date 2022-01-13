@@ -206,6 +206,7 @@
                         </button>
                     </div>
                     <div class="modal-body">
+                        {% if current_user.is_authenticated %}
                         {% if orders_history %}
                         <table class="table text-center">
                             <thead class="thead-light">
@@ -237,6 +238,7 @@
                         {% else %}
                         Chưa có thông tin nào.
                         {% endif %}
+                        {% endif %}
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
@@ -256,6 +258,7 @@
                             </button>
                         </div>
                         <div class="modal-body container my-3">
+                            {% if current_user.is_authenticated %}
                             <div class="d-flex flex-row">
                                 <label class="col-md-2" for="customer-fname">Tên</label>
                                 <input class="col-md-4 text-center" type="text" id="customer-fname" name="customer-fname"
@@ -266,7 +269,7 @@
                             </div>
                             <div class="d-flex flex-row my-3">
                                 <label class="col-md-2" for="customer-birth">Ngày sinh</label>
-                                <input class="col-md-4" type="date" id="customer-birth" name="customer-birth" value="{{ current_user.birthday }}"
+                                <input class="col-md-4" type="date" id="customer-birth" name="customer-birth" value="{{ current_user.birthday.date() }}"
                                        readonly required/>
                                 <label class="px-4 col-md-2" for="customer-gender">Giới tính</label>
                                 <select class="col-md-4" id="customer-gender" name="customer-gender">
@@ -290,6 +293,7 @@
                                 <label class="col-md-3" for="customer-note">Ghi chú</label>
                                 <textarea class="col-md-9" name="customer-note" id="customer-note" maxlength="255"></textarea>
                             </div>
+                            {% endif %}
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy bỏ</button>

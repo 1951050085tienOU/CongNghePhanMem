@@ -175,7 +175,9 @@ def new_order_from_client():
             #New data
             note = str(request.form.get('customer-note'))
             schedules = utils.rounded_time(datetime.strptime(request.form.get('order-date'), '%Y-%m-%dT%H:%M'))
-            if not utils.check_customer_exist_on_date(schedules, phone_number):
+            print(phone_number)
+            print(schedules)
+            if not utils.check_customer_exist_on_date(schedules.date(), phone_number):
                 if not utils.check_exist_order_at_date_time(schedules):
                     #commit to database
                     utils.add_new_order(first_name, last_name, birthday, phone_number, gender_id, appointment_date, note

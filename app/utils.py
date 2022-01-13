@@ -238,6 +238,7 @@ def reformat_0_phone_number(phone_number):
     else:
         return 0
 
+
 def send_messages(to_phone, content):
     to_phone = reformat_phone_number(to_phone)
     if to_phone != '' and content !='':
@@ -261,10 +262,25 @@ def get_customer_by_id(customer_id):
     return Customer.query.get(customer_id)
 
 
+def get_id_of_date_exist_in_schedule(in_date):
+    if in_date is datetime:
+        in_date = in_date.date()
+    dates = db.session.query(Schedule.id).filter(Schedule.examination_date == in_date).\
+        order_by(Schedule.examination_date.desc()).first()
+    if dates:
+        returned_id = dates.id
+    if not dates:
+        new_schedule = Schedule(examination_date=datetime(in_date.year, in_date.month, in_date.day, 0))
+        db.session.add(new_schedule)
+        db.session.commit()
+        returned_id = new_schedule.id
+
+    return returned_id
+
+
 def add_new_order(first_name, last_name, birthday, phone_number, gender_id, appointment_date, note, ordered_date):
-    #new Schedule
-    schedule = Schedule(examination_date=ordered_date)
-    db.session.add(schedule)
+    #new Schedule or not
+    schedule_id = get_id_of_date_exist_in_schedule(ordered_date.date())
 
     #order in Customer
     customer = Customer(first_name=first_name, last_name=last_name, birthday=birthday, phone_number=phone_number,
@@ -274,7 +290,9 @@ def add_new_order(first_name, last_name, birthday, phone_number, gender_id, appo
     db.session.commit()
 
     #customer schedule
-    customer_sche = CustomerSche(schedule_id=schedule.id, customer_id=customer.id)
+    customer_sche = CustomerSche(schedule_id=schedule_id, customer_id=customer.id, timer=time(ordered_date.hour,
+                                                                                              ordered_date.minute,
+                                                                                              ordered_date.second))
     db.session.add(customer_sche)
     db.session.commit()
 
@@ -338,23 +356,23 @@ def rounded_time(date_time): #10 minutes for each order time
         else:
             minute += 10 - math_minute
     else:
-        return date_time + timedelta(hour=+1, minutes=-minute)
+        return date_time + timedelta(hours=+1, minutes=-minute)
 
-    return date_time.replace(hour=hour, minute=minute, second=0)
+    return date_time.replace(hour=hour, minute=minute)
 
 
 def get_sat_in_date(date):
     if date is datetime:
         date = date.date()
     return_value = []
-    list_order = db.session.query(Schedule.examination_date).filter(extract('day', Schedule.examination_date) == date.day,
-                                                              extract('month', Schedule.examination_date) == date.month,
-                                                              extract('year', Schedule.examination_date) == date.year)\
-        .order_by(Schedule.examination_date).all()
+    list_order = db.session.query(CustomerSche.timer).filter(CustomerSche.schedule_id == Schedule.id).\
+        filter(extract('day', Schedule.examination_date) == date.day, extract('month', Schedule.examination_date) ==
+               date.month, extract('year', Schedule.examination_date) == date.year).order_by(CustomerSche.timer)\
+        .all()
     if list_order:
         for item in list_order:
             return_value.append(item[0])
-    return return_value      #[datetime1, datetime2, datetime3,...] in the same date
+    return return_value      #[time1, time2, time3,...] in the same date
 
 
 def get_date_from_to(from_date, to_date):
@@ -426,9 +444,13 @@ def check_exist_order_at_date_time(date_time):
 
 
 def check_customer_exist_on_date(date_time, phone_number):
-    check_exist = db.session.query(Schedule.examination_date).filter(Customer.phone_number == phone_number, Customer.id
-                                                                     == CustomerSche.customer_id, CustomerSche.
-                                                                     schedule_id == Schedule.id).first()
+    if date_time is datetime:
+        date_time = date_time.date()
+    check_exist = db.session.query(CustomerSche.timer).filter(Customer.phone_number == phone_number, CustomerSche.
+                                                              customer_id == Customer.id, Schedule.id == CustomerSche.
+                                                              schedule_id, Schedule.examination_date == date_time)\
+        .first()
+
     if check_exist:
         return True   #exist
     return False      #not_exist
