@@ -1,4 +1,4 @@
-{% extends 'admin/general.html' %}
+{% extends 'admin/base.html' %}
 
 {% block body %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.6.2/chart.js"></script>
@@ -9,10 +9,10 @@
             <h3 class="p-2" style="font-weight: normal">Thống kê doanh thu</h3>
             <div class='d-flex flex-row pr-3'>
                 <form class="pl-2 ml-auto" style="display: inline-block">
-                    <select name='chart' id="chartSelect-stat" onchange="loadChartRevenue(this.options[this.selectedIndex].value, true)">
-                        <option value="line" selected>Đường</option>
-                        <option value="bar">Cột</option>
-                        <option value="pie">Tròn</option>
+                    <select name='chart' id="chartSelect-stat">
+                        {% for t in types %}
+                    <option value={{t['value']}}>{{t['text']}}</option>
+                        {% endfor %}
                     </select>
                     <input type="submit" class="btn btn-info" value="Thống kê" />
                  </form>
@@ -26,9 +26,9 @@
             <div class='d-flex flex-row pr-3'>
                 <!--<a href="#" style="display: inline-block" class="link-info ml-auto">Bảng biểu</a>-->
                 <form class="pl-2 ml-auto" style="display: inline-block">
-                    <select name='chart' id="chartSelect-name" onchange="loadChartMedical(this.options[this.selectedIndex].value, true)">
+                    <select name='chart' id="chartSelect-name">
                         <option value="line">Đường</option>
-                        <option value="bar" selected>Cột</option>
+                        <option value="bar">Cột</option>
                         <option value="pie">Tròn</option>
                     </select>
                     <input type="submit" class="btn btn-info" value="Thống kê" />
@@ -52,10 +52,10 @@
                 <div class='d-flex flex-row pr-3 py-3'>
                 <!--<a href="#" style="display: inline-block" class="link-info pb-3">Bảng biểu</a>-->
                 <form class="pl-2" style="display: inline-block">
-                    <select name='chart' id="chartSelect-medicine" onchange="loadChartMedicine(this.options[this.selectedIndex].value, true)">
+                    <select name='chart' id="chartSelect-medicine">
                         <option value="line">Đường</option>
                         <option value="bar">Cột</option>
-                        <option value="pie" selected>Tròn</option>
+                        <option value="pie">Tròn</option>
                     </select>
                     <input type="submit" class="btn btn-info" value="Thống kê" />
                  </form>
@@ -141,14 +141,6 @@
 </div>
 -->
 <script>
-    function referenceValue(varObj, value) {
-        varObj.value = value;
-    }
-
-    let oldChartForRevenue = {};
-    let oldChartForMedical = {};
-    let oldChartForMedicine = {};
-
     let labels=[], data=[], labels2=[], data2=[], labels3=[], data3=[]
     let colors =[], colors2=[], colors3=[]
     let borderColors=[], borderColors2=[], borderColors3=[]
@@ -182,12 +174,15 @@
     colors3.push(`rgba(${r},${g},${b},0.3)`)
     borderColors3.push(`rgba(${r},${g},${b},1)`)
     {% endfor %}
-
-    function loadChart(ctx, type, labels, label, data, colors, borderColors, oldChart ,destroy){
-        if (destroy)
-        {
-            oldChart.value.destroy();
-        }
+    window.onload = function(){
+        const ctxRevenueChart = document.getElementById('myRevenueChart').getContext('2d');
+        const ctxExaminationChart = document.getElementById('myExaminationChart').getContext('2d');
+        const ctxMedicineChart = document.getElementById('myMedicineChart').getContext('2d');
+        loadChart(ctxRevenueChart, 'bar', labels, 'Thống kê doanh thu', data, colors, borderColors)
+        loadChart(ctxExaminationChart, 'line', labels2, 'Tần suất khám', data2, colors2, borderColors2)
+        loadChart(ctxMedicineChart, 'pie', labels3, 'Thống kê thuốc', data3, colors3, borderColors3)
+    }
+    function loadChart(ctx, type, labels, label, data, colors, borderColors){
         const MyChart = new Chart(ctx, {
             type: type,
             data: {
@@ -208,25 +203,6 @@
                 }
             }
         });
-        referenceValue(oldChart, MyChart);
-    }
-    function loadChartRevenue(type, destroy) {
-        const ctxRevenueChart = document.getElementById('myRevenueChart').getContext('2d');
-        loadChart(ctxRevenueChart, type, labels, 'Thống kê doanh thu', data, colors, borderColors, oldChartForRevenue, destroy);
-    }
-    function loadChartMedical(type, destroy) {
-        const ctxExaminationChart = document.getElementById('myExaminationChart').getContext('2d');
-        loadChart(ctxExaminationChart, type, labels2, 'Tần suất khám', data2, colors2, borderColors2, oldChartForMedical, destroy);
-    }
-    function loadChartMedicine(type, destroy) {
-        const ctxMedicineChart = document.getElementById('myMedicineChart').getContext('2d');
-        loadChart(ctxMedicineChart, type, labels3, 'Thống kê thuốc', data3, colors3, borderColors3, oldChartForMedicine, destroy);
-    }
-
-    window.onload = function() {
-        loadChartRevenue("line", false);
-        loadChartMedical("bar");
-        loadChartMedicine('pie');
     }
 </script>
 <br><br>
