@@ -240,7 +240,7 @@ if __name__ == "__main__":
     # db.session.add(m5)
     # #Add medicall_bill
     # mb1 = MedicalBill(user_id=2, customer_sche=1, symptom='Đau đầu, sổ mũi', diagnostic_disease= 'Đau đầu')
-    # mb2 = MedicalBill(user_id=2, customer_sche=2, symptom='Ho, mất vị giác', diagnostic_disease= 'Dương tính Covid:(')
+    # mb2 = MedicalBill(user_id=2, customer_sche=2, symptom='Ho, mất vị giác', diagnostic_disease= 'Sốt')
     # mb3 = MedicalBill(user_id=2, customer_sche=3, symptom='Đau lưng, mỏi gối', diagnostic_disease= 'Dấu hiệu tuổi già')
     # mb4 = MedicalBill(user_id=2, customer_sche=4, symptom='Chảy máu mũi', diagnostic_disease= 'Viêm xoang')
     # db.session.add(mb1)
@@ -270,17 +270,17 @@ if __name__ == "__main__":
     # r1 = Regulation()
     # db.session.add(r1)
     
-    #Thêm dữ liệu hiện tại
+    #Thêm dữ liệu hiện tại để xem thống kê
     # c5 = Customer(first_name='A', last_name='Nguyen Van', birthday=datetime(2000, 8, 6, 0),
-    #               phone_number='0943423253', appointment_date=datetime(2022, 1, 14, 0), gender_id=Gender.NAM)
+    #               phone_number='0943423253', appointment_date=datetime.now(), gender_id=Gender.NAM)
     # c6 = Customer(first_name='B', last_name='Le Ngoc', birthday=datetime(1999, 8, 6, 0),
-    #               phone_number='0943423983', appointment_date=datetime(2022, 1, 14, 0), gender_id=Gender.NAM)
+    #               phone_number='0943423983', appointment_date=datetime.now(), gender_id=Gender.NAM)
     # db.session.add(c5)
     # db.session.add(c6)
 
-    # s3 = Schedule(examination_date=date(2022, 1, 14))
+    # s3 = Schedule(examination_date=datetime.now())
     # db.session.add(s3)
-    #
+
     # cs5 = CustomerSche(customer_id=5, schedule_id=3, examined=True, timer=time(9, 30, 20))
     # cs6 = CustomerSche(customer_id=6, schedule_id=3, examined=True, timer=time(10, 30, 20))
     # cs7 = CustomerSche(customer_id=2, schedule_id=3, examined=False, timer=time(13, 30, 20))
@@ -289,7 +289,7 @@ if __name__ == "__main__":
     # db.session.add(cs7)
     #
     # mb5 = MedicalBill(user_id=2, customer_sche=5, symptom='Đau đầu, sổ mũi', diagnostic_disease= 'Đau đầu')
-    # mb6 = MedicalBill(user_id=2, customer_sche=6, symptom='Ho, mất vị giác', diagnostic_disease= 'Dương tính Covid:(')
+    # mb6 = MedicalBill(user_id=2, customer_sche=6, symptom='Ho, mất vị giác', diagnostic_disease= 'Covid')
     # db.session.add(mb5)
     # db.session.add(mb6)
 
@@ -298,11 +298,11 @@ if __name__ == "__main__":
     # db.session.add(mbd6)
     # db.session.add(mbd7)
     #
-    # r5 = Receipt(total_price=740000, regulation=1, medical_bill=5, customer_id=5, user_id=3, created_date=datetime(2022, 1, 14, 0))
-    # r6 = Receipt(total_price=740000, regulation=1, medical_bill=6, customer_id=6, user_id=3, created_date=datetime(2022, 1, 14, 0))
+    # r5 = Receipt(total_price=740000, regulation=1, medical_bill=5, customer_id=5, user_id=3, created_date=datetime.now())
+    # r6 = Receipt(total_price=740000, regulation=1, medical_bill=6, customer_id=6, user_id=3, created_date=datetime.now())
     # db.session.add(r5)
     # db.session.add(r6)
     
-    # db.session.commit()
+    #db.session.commit()
     db.create_all()
 

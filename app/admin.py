@@ -88,15 +88,19 @@ class General(AdminIndexView, ModelAuthenticated):
 
         # Tra cứu
         #search_customer = utils.load_customers(request.args.get('customer_name'), request.args.get('phoneNumber'))
-        customer = utils.tim_khach_hang(sdt=request.args.get('phoneNumber'))
+        if request.args.__eq__('GET'):
+            customer = utils.tim_khach_hang(sdt=request.args.get('phoneNumber'))
+
+        customer = customer_now
         if customer:
             search_customer = utils.lich_su_kham(customer.id)
         else:
-            search_customer = MedicalBill.query.join(CustomerSche, MedicalBill.customer_sche.__eq__(CustomerSche.id))\
-                .join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id)).join(Customer, CustomerSche.customer_id.__eq__(Customer.id))\
-                .add_column(Schedule.examination_date).add_columns(Customer.first_name)\
-                .add_columns(Customer.last_name).add_columns(extract('year', Customer.birthday)).group_by(MedicalBill.id)\
-                .order_by(MedicalBill.id).all()
+            search_customer = None
+            # search_customer = MedicalBill.query.join(CustomerSche, MedicalBill.customer_sche.__eq__(CustomerSche.id))\
+            #     .join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id)).join(Customer, CustomerSche.customer_id.__eq__(Customer.id))\
+            #     .add_column(Schedule.examination_date).add_columns(Customer.first_name)\
+            #     .add_columns(Customer.last_name).add_columns(extract('year', Customer.birthday)).group_by(MedicalBill.id)\
+            #     .order_by(MedicalBill.id).all()
         return self.render('admin/general.html', revenue_statistics=revenue_statistics, list_of_months=pre_months,
                            medicine_statistics_name=medicine_name, medicine_statistics_percent=medicine_percent,
                            max_customer=max_customer, medical_fee=medical_fee, ordered_today=ordered_today,
@@ -234,19 +238,25 @@ class LogOutUser(BaseView):
 class CreateMedicalBill(DoctorView):
     @expose('/')
     def __index__(self):
+        maphieu = MedicalBill.query.all()[-1].id
         symptom_available = MedicalBill.query.all()
         medical_name = Medicine.query.all()
 
-
-        return self.render('admin/doctor_medicalBill.html', symptom_available=symptom_available, medical_name=medical_name)
+        return self.render('admin/doctor_medicalBill.html', symptom_available=symptom_available, medical_name=medical_name, maphieumoi=maphieu+1)
 
 class SeeMedicalRecord(DoctorView):
     @expose('/')
     def __index__(self):
         # Tra cứu
         now = datetime.now()
-        search_customers = utils.load_customers(request.args.get('customer_name'), request.args.get('maPhieuKham'), request.args.get('phoneNumber'))
+        customer = utils.tim_khach_hang(request.args.get('phone_number'))
+        medical_id = request.args.get('medical-id', None)
 
+        if customer:
+            #search_customers = utils.load_customers(request.args.get('customer_name'), request.args.get('maPhieuKham'), request.args.get('phoneNumber'))
+            search_customers = utils.lich_su_kham(customer_id=customer.id, medical_id=medical_id)
+        else:
+            search_customers = None
         return self.render('admin/doctor_medicalRecord.html', search_customers=search_customers, now=now)
 
 

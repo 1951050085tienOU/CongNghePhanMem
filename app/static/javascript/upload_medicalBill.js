@@ -21,12 +21,151 @@
 //        }
 //    })
 //}
+function createmedicalbill(callback){
+    let ten = document.getElementById('customer_name').value
+    let sdt = document.getElementById('phoneNumber').value
+    let tuoi = document.getElementById('customer-age').value
+    let gioitinh = document.getElementById('customer-gender').value
+    let phieukham = document.getElementById('medical-id').value
+    let trieuchung = document.getElementById('symptom').value
+    let benhchuandoan = document.getElementById('diagnostic_disease').value
+    fetch('/admin/createmedicalbill/create-medicalbill', {
+    method:'post',
+    body: JSON.stringify({
+        'ten': ten,
+        'sdt': sdt,
+        'tuoi': tuoi,
+        'gioitinh': gioitinh,
+        'phieukham': phieukham,
+        'trieuchung': trieuchung,
+        'benhchuandoan': benhchuandoan
+    }),
+    headers:{
+        'Content-Type': 'application/json'
+    }
+    }).then(res => res.json()).then(data => {
+        if(data.status == 201){
+            console.info(data.medical_bill)
+            callback()
+            return 201
+        }
+        else if(data.status==404){
+            alert(data.err_msg)
+            return 404
+        }
+    })
+}
 
-function loadPatient(obj){
-    fetch('/admin/createmedicalbill',{
+function addMedicine(){
+    createmedicalbill(saveMedicine)
+}
+
+function saveMedicine(){
+    let obj = document.getElementById('medicine-name');
+    fetch('/admin/createmedicalbill/add-medicine', {
         method:'post',
         body:JSON.stringify({
-            'sdt':obj.value
+            'medicine_name':obj.value
+        }),
+        headers:{
+        'Content-Type': 'application/json'
+        }
+    }).then(function(res){
+        if (!res.ok) {
+            alert('Hãy chọn thuốc !')
+        }
+        else{
+            console.info(res)
+            return res.json()
+        }
+    }).then(data =>{
+        if (data.status == 201){
+            console.info(data.medicine)
+            location.reload()
+        } else if(data.status == 404){
+            alert(data.err_msg)
+        }
+    })
+
+}
+
+function del(){
+    createmedicalbill(none)
+    if(confirm('Xóa phiếu ?')==true){
+        fetch('/admin/createmedicalbill/delete-medicinebill-details',{
+            method:'post'
+        }).then(res => res.json()).then(data =>{
+            if (data.code == 200)
+                location.reload()
+            else
+                alert('Lỗi')
+        }).catch(err=>console.error(err))
+    }
+}
+
+function updateMedicineQuantity(obj, id){
+    fetch('/admin/createmedicalbill/update/quantity', {
+        method:'put',
+        body: JSON.stringify({
+            'id':id,
+            'quantity':obj
+        }),
+        headers:{
+            'Content-Type':'application/json'
+        }
+    }).then(res => res.json()).then(data =>{
+        console.info(data)
+    })
+}
+
+function updateHowToUse(obj,id){
+    fetch('/admin/createmedicalbill/update/how-to_use', {
+        method:'put',
+        body: JSON.stringify({
+            'id':id,
+            'how_to_use':obj
+        }),
+        headers:{
+            'Content-Type':'application/json'
+        }
+    }).then(res => res.json()).then(data =>{
+        console.info(data)
+    })
+}
+function delMedicine(id){
+    createmedicalbill(none)
+    if(confirm("Xóa thuốc ?")==true){
+        fetch('/admin/createmedicalbill/delete-medicine',{
+            method:'put',
+            body:JSON.stringify({
+                'id':id
+            }),
+            headers:{
+                'Content-Type': 'application/json'
+            }
+        }).then(res => res.json()).then(data => {
+            if (data.status=201){
+                console.info(data.medicine)
+                location.reload()
+            } else if(data.status=404){
+                alert('Lỗi hệ thồng')
+            }
+        })
+    }
+}
+
+function none(){
+    console.info('haha')
+}
+
+function loadPatient(){
+    let obj = document.getElementById('phoneNumber')
+    let phieukham = document.getElementById('medical-id')
+    fetch('/admin/createmedicalbill/load-patient',{
+        method:'post',
+        body:JSON.stringify({
+            'sdt':obj.value,
+            'phieukham':phieukham.value
         }),
         headers:{
         'Content-Type': 'application/json'
@@ -50,20 +189,45 @@ function loadPatient(obj){
             <div class="row d-flex">
                 <div class="p-2 d-flex col-md-4">
                     <label class="p-2">Tuổi</label>
-                    <span class="text-success p-2" style="margin-left:1rem; margin-right:1rem">${p.age}</span>
+                    <span class="text-success p-2" style="margin-left:1rem; margin-right:1rem">
+                        <input class='' id="customer-age" value="${p.age}">
+                    </span>
                 </div>
                 <div class="p-2 d-flex col-md-4">
                     <label class="p-2">Giới tính</label>
-                    <span class="text-info p-2" style="margin-left:1rem; margin-right:1rem">${p.gender}</span>
+                    <span  class="text-info p-2" style="margin-left:1rem; margin-right:1rem">
+                        <input class='' id="customer-gender" value="${p.gender}">
+                    </span>
                 </div>
                 <div class="p-2 d-flex col-md-4">
                     <label class="p-2">Mã phiếu</label>
-                    <span class="text-danger p-2" style="margin-left:1rem; margin-right:1rem">1234</span>
+                    <span  class="text-danger p-2" style="margin-left:1rem; margin-right:1rem">
+                         <input class='' id="medical-id" value="${data.phieukham}">
+                    </span>
                 </div>
             </div>
             `
         } else if(data.status == 404){
             alert(data.err_msg)
         }
+        createmedicalbill(none)
     })
 }
+
+function addMedicalBill(){
+    if(confirm('Lập phiếu khám ?')==true){
+        fetch('/admin/createmedicalbill/',{
+            method:'post'
+        }).then(res => res.json()).then(data =>{
+            if (data.code == 400){
+                console.info(data.code)
+                location.reload()
+            }else{
+                console.info(data.code)
+                alert('Lập phiếu khám thất bại')
+            }
+        })
+    }
+}
+
+
