@@ -207,6 +207,9 @@ function loadPatient(){
                 </div>
             </div>
             `
+            document.getElementById('customer-age').disabled = true;
+            document.getElementById('customer-gender').disabled = true;
+            document.getElementById('medical-id').disabled = true;
         } else if(data.status == 404){
             alert(data.err_msg)
         }

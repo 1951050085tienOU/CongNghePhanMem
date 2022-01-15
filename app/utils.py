@@ -281,11 +281,11 @@ def BenhNhanHienTai(date):
 def ThongKeBenhNhan(date):
     customers = [0, 0, 0]
     # Số bênh nhân
-    customers[0] = len(CustomerSche.query.join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
-                       .filter(extract('day', Schedule.examination_date) == date).all())
+    customers[0] = CustomerSche.query.join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+                       .filter(Schedule.examination_date.__eq__(date)).count()
     # Số bênh nhân đã khám
-    customers[1] = len(CustomerSche.query.join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
-                       .filter(extract('day', Schedule.examination_date) == date, CustomerSche.examined == True).all())
+    customers[1] = CustomerSche.query.join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+                       .filter(Schedule.examination_date.__eq__(date), CustomerSche.examined == True).count()
     # Số bệnh nhân chưa khám
     customers[2] = (customers[0] - customers[1])
     return customers
@@ -296,7 +296,7 @@ def DanhSachBenhNhan(date):
     #         .filter(extract('day', Schedule.examination_date) == date)\
     #         .group_by(Customer.first_name).all()
     return Customer.query.join(CustomerSche, CustomerSche.customer_id.__eq__(Customer.id)).join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
-            .filter(extract('day', Schedule.examination_date) == date).add_columns(Schedule.examination_date).all()
+            .filter(Schedule.examination_date.__eq__(date)).add_columns(Schedule.examination_date).all()
 
 def load_customers(name=None, phone=None, codeMedicalBill=None):
     kq = {}
@@ -345,9 +345,18 @@ def add_medical_bill(cs, medicalinfo, medicinebilldetails):
                               how_to_use=m['how_to_use'], unit_price=m['quantity']*(Medicine.query.get(m['id']).price))
         db.session.add(m)
     db.session.commit()
-    return medicalbill
+    return update_customersche(medicalbill.id)
+
+def update_customersche(id):
+    c = CustomerSche.query.join(MedicalBill, MedicalBill.customer_sche.__eq__(CustomerSche.id)) \
+        .filter(MedicalBill.id.__eq__(id)).first()
+    c.examined = True
+    db.session.add(c)
+    db.session.commit()
+    return c
 
 def get_customersche(customer_id, date):
     return CustomerSche.query.join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
         .filter(Schedule.examination_date == date, CustomerSche.customer_id.__eq__(customer_id)).first()
+
 

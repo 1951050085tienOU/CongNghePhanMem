@@ -24,38 +24,39 @@
                     <button class="btn btn-info" data-toggle="modal" data-target="#myRevenueModal">Xem chi tiết</button>
                     <div class="modal" id="myRevenueModal">
                           <div class="modal-dialog modal-lg">
-                            <div class="modal-content">
+                            <div class="modal-content" >
+                                <div id="source-html-revenue">
+                                  <!-- Modal Header -->
+                                  <div class="modal-header">
+                                    <h4 class="modal-title">Báo cáo thống kê doanh thu</h4>
+                                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                  </div>
 
-                              <!-- Modal Header -->
-                              <div class="modal-header">
-                                <h4 class="modal-title">Báo cáo thống kê doanh thu</h4>
-                                <button type="button" class="close" data-dismiss="modal">&times;</button>
-                              </div>
-
-                              <!-- Modal body -->
-                              <div class="modal-body">
-                                  <table class="table">
-                                      <tr>
-                                        <th>Ngày</th>
-                                        <th>Số bệnh nhân</th>
-                                        <th>Doanh thu</th>
-                                        <th>Tỷ lệ</th>
-                                      </tr>
-                                      {% for r in revenue_stats %}
-                                      <tr>
-                                        <td>{{ r[0] }}</td>
-                                        <td>{{ r[1] }}</td>
-                                        <td>{{ r[2] }}</td>
-                                        <td>{{ "{:.2f}".format(r[3]) }}%</td>
-                                      </tr>
-                                      {% endfor %}
-                                  </table>
-                              </div>
+                                  <!-- Modal body -->
+                                  <div class="modal-body">
+                                      <table class="table">
+                                          <tr>
+                                            <th>Ngày</th>
+                                            <th>Số bệnh nhân</th>
+                                            <th>Doanh thu</th>
+                                            <th>Tỷ lệ</th>
+                                          </tr>
+                                          {% for r in revenue_stats %}
+                                          <tr>
+                                            <td>{{ r[0] }}</td>
+                                            <td>{{ r[1] }}</td>
+                                            <td>{{ r[2] }}</td>
+                                            <td>{{ "{:.2f}".format(r[3]) }}%</td>
+                                          </tr>
+                                          {% endfor %}
+                                      </table>
+                                  </div>
+                                </div>
 
                               <!-- Modal footer -->
                               <div class="modal-footer">
                                 <button type="button" class="btn btn-danger" data-dismiss="modal">Thoát</button>
-                                <button type="button" class="btn btn-success" data-dismiss="modal">In báo cáo</button>
+                                <button type="button" class="btn btn-success" onclick="exportHTML(document.getElementById('source-html-revenue'));" data-dismiss="modal">In báo cáo</button>
                               </div>
 
                             </div>
@@ -81,33 +82,33 @@
                     <div class="modal" id="myExaminationModal">
                           <div class="modal-dialog">
                             <div class="modal-content">
+                                <div id="source-html-examination">
+                                  <!-- Modal Header -->
+                                  <div class="modal-header">
+                                    <h4 class="modal-title">Thống kê tần suất khám</h4>
+                                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                  </div>
 
-                              <!-- Modal Header -->
-                              <div class="modal-header">
-                                <h4 class="modal-title">Thống kê tần suất khám</h4>
-                                <button type="button" class="close" data-dismiss="modal">&times;</button>
-                              </div>
-
-                              <!-- Modal body -->
-                              <div class="modal-body">
-                                  <table class="table">
-                                      <tr>
-                                            <th>Ngày</th>
-                                            <th>Số khách đã khám</th>
-                                        </tr>
-                                        {% for e in examination_stats %}
-                                        <tr>
-                                            <td> {{ e[0] }} </td>
-                                            <td> {{ e[1] }} </td>
-                                        </tr>
-                                        {% endfor %}
-                                  </table>
-                              </div>
-
+                                  <!-- Modal body -->
+                                  <div class="modal-body">
+                                      <table class="table">
+                                          <tr>
+                                                <th>Ngày</th>
+                                                <th>Số khách đã khám</th>
+                                            </tr>
+                                            {% for e in examination_stats %}
+                                            <tr>
+                                                <td> {{ e[0] }} </td>
+                                                <td> {{ e[1] }} </td>
+                                            </tr>
+                                            {% endfor %}
+                                      </table>
+                                  </div>
+                                </div>
                               <!-- Modal footer -->
                               <div class="modal-footer">
                                 <button type="button" class="btn btn-danger" data-dismiss="modal">Thoát</button>
-                                <button type="button" class="btn btn-success" data-dismiss="modal">In báo cáo</button>
+                                <button type="button" class="btn btn-success" onclick="exportHTML(document.getElementById('source-html-examination'));" data-dismiss="modal">In báo cáo</button>
                               </div>
 
                             </div>
@@ -143,39 +144,39 @@
                         <div class="modal" id="myMedicineModal">
                               <div class="modal-dialog modal-xl">
                                 <div class="modal-content">
+                                    <div id="source-html-medicine">
+                                      <!-- Modal Header -->
+                                      <div class="modal-header">
+                                        <h4 class="modal-title">Báo cáo sử dụng thuốc</h4>
+                                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                      </div>
 
-                                  <!-- Modal Header -->
-                                  <div class="modal-header">
-                                    <h4 class="modal-title">Báo cáo sử dụng thuốc</h4>
-                                    <button type="button" class="close" data-dismiss="modal">&times;</button>
-                                  </div>
-
-                                  <!-- Modal body -->
-                                  <div class="modal-body">
-                                      <table class="table">
-                                          <tr>
-                                            <th>Thuốc</th>
-                                            <th>Đơn vị tính</th>
-                                            <th>Số lượng</th>
-                                            <th>Số lần dùng</th>
-                                          </tr>
-                                          {% for m in medicine_stats %}
-                                          <tr>
-                                            <td>{{ m[0].name }}</td>
-                                            <td>
-                                                {{"{:,.1f}".format(m[0].price)}} {% if m[0].unit %}{{m[0].unit}}{% else %}VND{% endif %}
-                                            </td>
-                                            <td>{{ m[1] }}</td>
-                                            <td>{{ m[2] }}</td>
-                                          </tr>
-                                          {% endfor %}
-                                      </table>
-                                  </div>
-
+                                      <!-- Modal body -->
+                                      <div class="modal-body">
+                                          <table class="table">
+                                              <tr>
+                                                <th>Thuốc</th>
+                                                <th>Đơn vị tính</th>
+                                                <th>Số lượng</th>
+                                                <th>Số lần dùng</th>
+                                              </tr>
+                                              {% for m in medicine_stats %}
+                                              <tr>
+                                                <td>{{ m[0].name }}</td>
+                                                <td>
+                                                    {{"{:,.1f}".format(m[0].price)}} {% if m[0].unit %}{{m[0].unit}}{% else %}VND{% endif %}
+                                                </td>
+                                                <td>{{ m[1] }}</td>
+                                                <td>{{ m[2] }}</td>
+                                              </tr>
+                                              {% endfor %}
+                                          </table>
+                                      </div>
+                                    </div>
                                   <!-- Modal footer -->
                                   <div class="modal-footer">
                                     <button type="button" class="btn btn-danger" data-dismiss="modal">Thoát</button>
-                                    <button type="button" class="btn btn-success" data-dismiss="modal">In báo cáo</button>
+                                    <button type="button" class="btn btn-success" onclick="exportHTML(document.getElementById('source-html-medicine'));" data-dismiss="modal">In báo cáo</button>
                                   </div>
 
                                 </div>
@@ -187,13 +188,13 @@
                     <p>
                         Thuốc cần chú ý bổ sung thêm:
                         {% for t in thuoc_bo_sung %}
-                        {{ t.name }}
+                        {{ t.name }} ,
                         {% endfor %}
                     </p>
                     <p>
                         Thuốc đã hết số lượng:
                         {% for t in thuoc_het_sl %}
-                        {{ t.name }}
+                        {{ t.name }} ,
                         {% endfor %}
                     </p>
                     <p>
@@ -287,6 +288,22 @@
     function loadChartMedicine(type, destroy) {
         const ctxMedicineChart = document.getElementById('myMedicineChart').getContext('2d');
         loadChart(ctxMedicineChart, type, labels3, 'Thống kê thuốc', data3, colors3, borderColors3, oldChartForMedicine, destroy);
+    }
+    function exportHTML(obj){
+        var header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' "+
+            "xmlns:w='urn:schemas-microsoft-com:office:word' "+
+            "xmlns='http://www.w3.org/TR/REC-html40'>"+
+            "<head><meta charset='utf-8'><title>Export HTML to Word Document with JavaScript</title></head><body>";
+        var footer = "</body></html>";
+        var sourceHTML = header+obj.innerHTML+footer;
+
+        var source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
+        var fileDownload = document.createElement("a");
+        document.body.appendChild(fileDownload);
+        fileDownload.href = source;
+        fileDownload.download = 'document.doc';
+        fileDownload.click();
+        document.body.removeChild(fileDownload);
     }
 
     window.onload = function() {

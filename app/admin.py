@@ -73,18 +73,19 @@ class General(AdminIndexView, ModelAuthenticated):
                 medicine_percent.append(percent_record[count + 1])
 
         """Tổng quan của bác sĩ"""
-        now = datetime.now()
+        now = date.today()
+        utils.update_customersche(MedicalBill.query.all()[-1].id)
         # Bệnh nhân hiện tại
-        customer_now = utils.BenhNhanHienTai(now.day)
+        customer_now = utils.BenhNhanHienTai(now)
 
         # Lịch hẹn ngày
-        customers_today = utils.LichHenNgay(now.day)
+        customers_today = utils.LichHenNgay(now)
 
         # Thống Kê bệnh nhân
-        patient_stats = utils.ThongKeBenhNhan(now.day)
+        patient_stats = utils.ThongKeBenhNhan(now)
 
         # Danh sách Bệnh nhân
-        patient_list = utils.DanhSachBenhNhan(now.day)
+        patient_list = utils.DanhSachBenhNhan(now)
 
         # Tra cứu
         #search_customer = utils.load_customers(request.args.get('customer_name'), request.args.get('phoneNumber'))
