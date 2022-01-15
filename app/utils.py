@@ -1,6 +1,6 @@
 import math
 from datetime import datetime, timedelta
-from app import app, db, CustomObject, client, keys
+from app import app, db, CustomObject#, client, keys
 from sqlalchemy.sql import func
 from sqlalchemy import orm
 from sqlalchemy.orm import session, query
@@ -111,6 +111,10 @@ def get_regulation():
     value.append(primary.customer_quantity)
     value.append(primary.examination_price)
     return value
+
+
+def get_present_regulation():
+    return Regulation.query.get(get_last_reg())
 
 
 def medine_stock_percent_over_5():             #lấy danh sách phần trăm thuốc trong tổng dưới dạng [id, percent, ..., 'OTHER', percent]
@@ -239,13 +243,13 @@ def reformat_0_phone_number(phone_number):
         return 0
 
 
-def send_messages(to_phone, content):
+'''def send_messages(to_phone, content):
     to_phone = reformat_phone_number(to_phone)
     if to_phone != '' and content !='':
         message = client.messages.create(
             body=content,
             from_=keys['twilio_number'],
-            to=to_phone)
+            to=to_phone)'''
 
 
 def get_customer_by_phone(phone_number):
@@ -459,3 +463,254 @@ def check_customer_exist_on_date(date_time, phone_number):
 def session_clear(key):
      if key in session:
          del session[key]
+
+
+def KiemTraRole(user):
+    return str(user.user_role)
+
+
+def LichHenNgay(date):
+    return Customer.query.join(CustomerSche, CustomerSche.customer_id.__eq__(Customer.id))\
+        .join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+        .filter(extract('day', Schedule.examination_date) == date).all()
+
+
+def BenhNhanHienTai(date):
+    return Customer.query.join(CustomerSche, CustomerSche.customer_id.__eq__(Customer.id)) \
+        .join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id)) \
+        .filter(extract('day', Schedule.examination_date) == date, CustomerSche.examined == False).first()
+
+
+def ThongKeBenhNhan(date):
+    customers = [0, 0, 0]
+    # Số bênh nhân
+    customers[0] = len(CustomerSche.query.join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+                       .filter(extract('day', Schedule.examination_date) == date).all())
+    # Số bênh nhân đã khám
+    customers[1] = len(CustomerSche.query.join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+                       .filter(extract('day', Schedule.examination_date) == date, CustomerSche.examined == True).all())
+    # Số bệnh nhân chưa khám
+    customers[2] = (customers[0] - customers[1])
+    return customers
+
+
+def DanhSachBenhNhan(date):
+    # return db.session.query(Customer.first_name, extract('year',Customer.birthday), extract('day', Schedule.examination_date))\
+    #         .join(CustomerSche, CustomerSche.customer_id.__eq__(Customer.id)).join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+    #         .filter(extract('day', Schedule.examination_date) == date)\
+    #         .group_by(Customer.first_name).all()
+    return Customer.query.join(CustomerSche, CustomerSche.customer_id.__eq__(Customer.id)).join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+            .filter(extract('day', Schedule.examination_date) == date).add_columns(Schedule.examination_date).all()
+
+
+def ThongKeLichHen(date):
+    customers = [0, 0, 0]
+    # Số khách hàng
+    customers[0] = len(CustomerSche.query.join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+                       .filter(extract('day', Schedule.examination_date) == date).all())
+    # Số bênh nhân đã được xác nhận lịch hẹn
+    customers[1] = len(Customer.query.join(Schedule, Customer.id.__eq__(Schedule.id))\
+                       .filter(extract('day', Schedule.examination_date) == date, Customer.was_scheduled == True).all())
+    # Số bệnh nhân chưa được xác nhận
+    customers[2] = (customers[0] - customers[1])
+    return customers
+
+
+#tra cứu khách hàng bác sĩ và nurse
+def load_customers(name=None, phone=None, codeMedicalBill=None, address=None):
+    kq = {}
+    if name:
+        for p in Customer.query.all():
+            if p.first_name.strip().__eq__(name.strip()):
+                return p
+    if phone:
+        for p in Customer.query.all():
+            if p.phone_number.strip().__eq__(phone.strip()):
+                return p
+    if codeMedicalBill:
+        for p in MedicalBill.query.all():
+            if p.id.strip().__eq__(codeMedicalBill.strip()):
+                return p
+    if address:
+        for p in Customer.query.all():
+            if p.address_id.strip().__eq__(address.strip()):
+                return p
+
+
+def load_sche(name=None, phone=None, address=None):
+    customer = Customer.query
+    if name:
+        customer = customer.filter(Customer.first_name.__eq__(name))
+    if phone:
+        customer = customer.filter(Customer.phone_number(phone))
+    if address:
+        customer = customer.filter(Customer.address_id(address))
+    return customer.all()
+
+
+#danh sách khách đã được xác nhận lịch hẹn-y tá
+def list_cus_was_sche(date):
+    return Customer.query.join(Schedule, Customer.id.__eq__(Schedule.id)) \
+                       .filter(extract('day', Schedule.examination_date) == date, Customer.was_scheduled == True).all()
+
+
+#danh sách khách chưa được xác nhận lịch hẹn-y tá
+def list_cus_wasnt_axam(date):
+    return Customer.query.join(CustomerSche, Customer.id.__eq__(CustomerSche.customer_id)) \
+                       .filter(CustomerSche.examined == False, Customer.was_scheduled == False).all()
+
+
+#Tạo lịch hẹn mới trên gd y tá
+def add_new_appoinment(first_name, last_name, birthday, phone_number, gender_id, appointment_date, note, ordered_date):
+    schedule = Schedule(examination_date=ordered_date)
+    db.session.add(schedule)
+    customer = Customer(first_name=first_name, last_name=last_name, birthday=birthday, phone_number=phone_number,
+                        gender_id=gender_id, appointment_date=appointment_date, note=note)
+    db.session.add(customer)
+
+    db.session.commit()
+
+    customer_sche = CustomerSche(schedule_id=schedule.id, customer_id=customer.id)
+    db.session.add(customer_sche)
+    db.session.commit()
+
+
+#Hàm sắp xêp lịch hẹn khách hàng
+def sorted_schedule(date):
+    sorted_sche = db.session.query(Schedule.examination_date).filter(extract('day', Schedule.examination_date) == date.day,
+                                                              extract('month', Schedule.examination_date) == date.month,
+                                                              extract('year', Schedule.examination_date) == date.year)\
+        .order_by(Schedule.examination_date).all()
+    return sorted(sorted_sche)
+
+
+def get_customer_sche_information(customer_sche_id):
+    return CustomerSche.query.filter(CustomerSche.id == customer_sche_id).first()
+
+
+def get_schedule_information(schedule_id):
+    return Schedule.query.get(schedule_id)
+
+
+def get_info_next_customer_in_orders():       #return the next customer will examine
+    #just be in present date
+    present_date = datetime.now().date()
+    un_completed_order = db.session.query(CustomerSche).filter(CustomerSche.schedule_id == Schedule.id,
+                                                               Schedule.examination_date == present_date,
+                                                               CustomerSche.examined.__eq__(False)).first()
+    if un_completed_order:
+        return un_completed_order
+    return None
+
+
+def get_orders_list_in_date(check_date):         #return list orders in a date by [(customer_id, date, time)]
+    if check_date is datetime:
+        check_date = check_date.date()
+    return db.session.query(Customer.id, Schedule.examination_date, CustomerSche.timer).\
+        filter(Schedule.examination_date == check_date, Schedule.id == CustomerSche.schedule_id,
+               Customer.id == CustomerSche.customer_id).all()
+
+
+def get_orders_need_to_checkout(): #if customers pass their turns, was_schedule from True to False
+    list_orders = db.session.query(Customer.id, MedicalBill.id).filter(Customer.id == CustomerSche.customer_id,
+                                                       CustomerSche.schedule_id == Schedule.id,
+                                                    CustomerSche.examined .__eq__(True),
+                                                    Customer.was_scheduled.__eq__(True),
+                                                       MedicalBill.customer_sche == CustomerSche.id).all()
+
+    need_list = []
+
+    if list_orders:
+        for order in list_orders:
+            if not db.session.query(Receipt).filter(order[0] == Receipt.customer_id, order[1] == Receipt.medical_bill)\
+                    .all():
+                need_list.append(order)
+
+    return need_list
+
+
+def see_receipt(receipt_id):
+    return Receipt.query.get(receipt_id)
+
+
+def get_medicine_in_medical_bill(medical_bill_id):
+    return MedicalBillDetail.query.filter(MedicalBillDetail.medical_bill == medical_bill_id).all()
+
+
+def get_total_price_in_receipt(medical_bill_id):
+    price = []
+
+    info = get_medicine_in_medical_bill(medical_bill_id)
+    regulation = get_present_regulation()
+
+    medical_price = regulation.examination_price
+    medicine_price = 0
+    tax_and_fee = 0
+
+    for inf in info:
+        medicine_price += inf.quantity * inf.unit_price
+
+    total_price = medical_price + medicine_price
+    tax_and_fee = 0.1 * total_price
+    total_price += tax_and_fee
+
+    price.append(total_price)
+    price.append(medical_price)
+    price.append(medicine_price)
+    price.append(tax_and_fee)
+
+    return price #[total_price, medical_price, medicine_price, tax_and_fee]
+
+
+def format_currency_vi(list_cur):
+    if list_cur:
+        list_temp = []
+        for value in list_cur:
+            value = format(int(value), ',')
+            list_temp.append(value)
+    return list_temp
+
+
+def add_new_receipt(regulation_id, medical_bill_id, customer_id):
+    new_receipt = Receipt(total_price=get_total_price_in_receipt(medical_bill_id)[0], regulation=regulation_id, medical_bill=medical_bill_id, customer_id=
+                          customer_id, user_id=current_user.id)
+    db.session.add(new_receipt)
+    db.session.commit()
+    return True
+
+
+def get_receipt_history(phone_number):
+    customers = Customer.query.filter(Customer.phone_number == phone_number).all()   #tên
+    list_re = []
+    if customers:
+        for customer in customers:
+            new_obj = CustomObject.CustomObjectReceiptHistory()
+
+            #họ tên
+            new_obj.name = customer.first_name + ' ' + customer.last_name
+
+            #ngày, tiền
+            receipt = db.session.query(Receipt).filter(Receipt.customer_id == customer.id).first()
+            new_obj.created_date = receipt.created_date
+            new_obj.total = receipt.total_price
+
+            #bác sĩ là ai, triệu chứng, chẩn đoán
+            medical_bill = get_medical_bill_by_id(receipt.medical_bill)
+            doctor = get_user_by_id(medical_bill.user_id)
+            new_obj.doctor = doctor.first_name + ' ' + doctor.last_name
+            new_obj.disease = medical_bill.diagnostic_disease
+            new_obj.symptom = medical_bill.symptom
+
+            #thuốc gì
+            medicine_string = ''
+            medicines = get_medicine_in_medical_bill(medical_bill.id)
+            if medicines:
+                for med in medicines:
+                    medicine_string += get_medicine_by_id(med.medicine) + " SL: " + str(med.quantity) + ' '
+            else:
+                medicine_string = "Trống"
+            new_obj.medicine = medicine_string
+
+            list_re.append(new_obj)
+    return list_re
+

@@ -10,7 +10,6 @@
 <body>
     <h1 class="text-center text-info pt-5">PHÒNG MẠCH TƯ HỒNG HIỀN VY TIẾN</h1>
     <div id="login" class="w-50 container p-3 my-3 bg-dark rounded">
-        <h1>{{ err_msg }}</h1>
         <div class="container">
             <div id="login-row" class="row justify-content-center align-items-center">
                 <div id="login-column" class="col-md-6">
@@ -27,6 +26,7 @@
                                 <input type="password" name="password" id="password" class="form-control"
                                        placeholder="Nhập mật khẩu" autocomplete="off">
                             </div>
+                            <span class="badge badge-pill badge-warning mb-4" style="font-size: 12pt;">{{ err_msg }}</span>
                             <div class="form-group">
                                 <input type="submit" name="submit" class="btn btn-info btn-md" value="Đăng nhập">
                             </div>

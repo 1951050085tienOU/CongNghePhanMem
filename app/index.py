@@ -1,7 +1,7 @@
 import cloudinary.uploader
 import random
 from app import CustomObject
-from app import app, db, login, client
+from app import app, db, login#, client
 from flask import render_template, url_for, request, redirect, jsonify
 from flask_login import login_user, logout_user, current_user, login_required
 
@@ -22,12 +22,11 @@ def index():
 
 @login.user_loader
 def user_load(user_id):
-    return utils.get_user_by_id(user_id=user_id)
-
-
-@login.user_loader
-def customer_load(customer_id):
-    return utils.get_customer_by_id(customer_id=customer_id)
+    user = utils.get_user_by_id(user_id=user_id)
+    if user.user_role:
+        return user
+    else:
+        return utils.get_customer_by_id(customer_id=user_id)
 
 
 @app.route('/admin/sign-in', methods=['get', 'post'])
@@ -157,7 +156,8 @@ def otp_auth_again():
 @app.route("/api/logout", methods=['get', 'post'])
 def customer_logout():
     logout_user()
-    utils.session_clear('response')
+    if session:
+        utils.session_clear('response')
     return redirect(url_for('index'))
 
 
@@ -188,6 +188,62 @@ def new_order_from_client():
             else:
                 return redirect(url_for('index', notification_code='justOneADay'))
     return redirect(url_for('index', notification_code='none'))
+
+
+########## NURSE #################
+#tạo lịch hẹn mới trên trang y tá
+@app.route("/add-new-appoinment", methods=['get', 'post'])
+def new_orderCus():
+    if current_user.is_authenticated:
+        if request.method.__eq__('POST'):
+            first_name = request.form.get('customer-fname')
+            last_name = request.form.get('customer-lname')
+            birthday = request.form.get('customer-birth')
+            gender_id = request.form.get('customer-gender')
+            phone_number = request.form.get('customer-phone')
+            appointment_date = request.form.get('order-date')
+            note = str(request.form.get('customer-note'))
+            schedules = utils.rounded_time(datetime.strptime(request.form.get('order-date'), '%Y-%m-%dT%H:%M'))
+            if not utils.check_customer_exist_on_date(schedules, phone_number):
+                if not utils.check_exist_order_at_date_time(schedules):
+                    # commit to database
+                    utils. add_new_appoinment(first_name, last_name, birthday, phone_number, gender_id, appointment_date, note
+                                        , schedules)
+                    return redirect(url_for('new_order', notification_code='submitSuccess'))
+                else:
+                    return redirect(url_for('new_order', notification_code='ExistOne'))
+            else:
+                return redirect(url_for('new_order', notification_code='justOneADay'))
+        return redirect(url_for('index', notification_code='RequestLogin'))
+
+
+@app.route("/new_order", methods=['get, post'])
+def new_order():
+    return render_template('admin/nurse_appoinments.html')
+
+
+@app.route('/api/payment', methods=['get', 'post'])
+def pay():
+    if current_user.is_authenticated:
+        if request.method.__eq__("POST"):
+            medical_id = request.form['medical-bill-id']
+            customer_id = utils.get_customer_sche_information(
+                utils.get_medical_bill_by_id(medical_id).customer_sche).customer_id
+            regulation = utils.get_last_reg()
+
+            utils.add_new_receipt(regulation_id=regulation, medical_bill_id=medical_id,
+                                  customer_id=customer_id)
+    return redirect('/admin/payment/')
+
+
+@app.route('/api/check-receipt', methods=['get', 'post'])
+def check_receipt_history():
+    if current_user.is_authenticated:
+        if request.method.__eq__("POST"):
+            phone_check = request.form['phone-check']
+            list_re = utils.get_receipt_history(phone_check)
+            return render_template('/admin/receipt_history.html', phone_check=phone_check, list_re=list_re)
+    return render_template('/admin/receipt_history.html')
 
 
 if __name__ == '__main__':

@@ -21,3 +21,21 @@ class CustomObjectTimeFree:
         self.hour = ''
         self.minute = []
 
+
+class CustomObjectReceiptHistory:
+    name = ''
+    created_date = ''
+    doctor = ''
+    symptom = ''
+    disease = ''
+    medicine = ''
+    total = ''
+
+    def __init__(self):
+        self.name = ''
+        self.created_date = ''
+        self.doctor = ''
+        self.symptom = ''
+        self.disease = ''
+        self.medicine = ''
+        self.total = ''

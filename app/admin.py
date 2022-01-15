@@ -28,6 +28,21 @@ class ModelAuthenticated(BaseView):
         return False
 
 
+class ManagerView(BaseView):
+    def is_accessible(self):
+        return current_user.is_authenticated and str(current_user.user_role).__eq__('UserRole.MANAGER')
+
+
+class DoctorView(BaseView):
+    def is_accessible(self):
+        return current_user.is_authenticated and str(current_user.user_role).__eq__('UserRole.DOCTOR')
+
+
+class NurseView(BaseView):
+    def is_accessible(self):
+        return current_user.is_authenticated and str(current_user.user_role).__eq__('UserRole.NURSE')
+
+
 class General(AdminIndexView, ModelAuthenticated):
     @expose('/')
     def index(self):
@@ -55,13 +70,42 @@ class General(AdminIndexView, ModelAuthenticated):
                 else:
                     medicine_name.append('Others')
                 medicine_percent.append(percent_record[count + 1])
+
+
+        #Tra cứu bác sĩ & y tá
+        now = datetime.now()
+        search_customer = utils.load_customers(request.args.get('customer_name'), request.args.get('phoneNumber'),
+                                               request.args.get('address_id'))
+        #Y tá
+        cus = utils.load_sche()
+        list_was_examination = utils.ThongKeLichHen(now)
+
+        #khách tiếp theo
+        #danh sách khám trong ngày
+        next_order_customer = ''
+        next_order_number = 0
+        orders_list = utils.get_orders_list_in_date(datetime.now().date())
+        the_next_order = utils.get_info_next_customer_in_orders()
+        if the_next_order:
+            next_order_customer = utils.get_customer_by_id(customer_id=the_next_order.customer_id)
+
+            for order in orders_list:
+                next_order_number += 1
+                if order[0] == the_next_order.customer_id:
+                    break
+
+        if next_order_number == len(orders_list) + 1:
+            next_order_number = ''
         return self.render('admin/general.html', revenue_statistics=revenue_statistics, list_of_months=pre_months,
                            medicine_statistics_name=medicine_name, medicine_statistics_percent=medicine_percent,
                            max_customer=max_customer, medical_fee=medical_fee, ordered_today=ordered_today,
-                           ordered_tomorrow=ordered_tomorrow, us=us)
+                           ordered_tomorrow=ordered_tomorrow, us=us, current_user=current_user,
+                           search_customer=search_customer, list_was_examination=list_was_examination, now=now, cus=cus,
+                           next_order_time=the_next_order, next_order_info=next_order_customer,
+                           next_order_number=next_order_number)
 
 
-class ManagerStatistics(ModelAuthenticated):
+class ManagerStatistics(ManagerView):
     @expose('/')
     def __index__(self):
         month = request.args.get('month', datetime.now().month)
@@ -117,14 +161,25 @@ class ManageMedicine(ModelView):
         'type_name': 'Loại thuốc'
     }
 
-class Management(ModelAuthenticated):
+    '''def is_accessible(self):
+        if current_user.user_role.name == 'MANAGER':
+            return False
+        return True
+
+    def is_visible(self):
+        if current_user.user_role.name == 'MANAGER':
+            return False
+        return True'''
+
+
+class Management(ManagerView):
 
     @expose('/')
     def __index__(self):
         return self.render('admin/management.html')
 
 
-class ManagerRegulation(ModelAuthenticated):
+class ManagerRegulation(ManagerView):
     @expose('/')
     def __index__(self):
         reg = utils.get_regulation()  # lấy quy định
@@ -173,7 +228,7 @@ class AccountSet(ModelAuthenticated):
             user_first_name = user.first_name
             user_last_name = user.last_name
             user_phone = user.phone_number
-            user_age = datetime.today().year - user.birthday.year
+            user_birthday = user.birthday.date()
             user_gender_id = user_gender[user.gender_id.name]
             if user.avatar:
                 user_avatar = user.avatar
@@ -182,7 +237,7 @@ class AccountSet(ModelAuthenticated):
 
             return self.render('admin/account_set.html', user_id=user_id, user_role=user_role_vi[user_role],
                                user_first_name=user_first_name, user_last_name=user_last_name, user_phone=user_phone,
-                               user_age=user_age, user_avatar=user_avatar, user_birth=user.birthday,
+                               user_birthday=user_birthday, user_avatar=user_avatar, user_birth=user.birthday,
                                user_gender=str(user_gender_id))
         else:     #mode thay đổi mật khẩu)
             return self.render('admin/change_password.html', current_password=user.password)
@@ -196,15 +251,71 @@ class LogOutUser(BaseView):
         return redirect('/admin/sign-in')
 
 
+class CreateMedicalBill(DoctorView):
+    @expose('/')
+    def __index__(self):
+
+        return self.render('admin/doctor_medicalBill.html')
+
+
+class SeeMedicalRecord(DoctorView):
+    @expose('/')
+    def __index__(self):
+        # Tra cứu
+        now = datetime.now()
+        search_customers = utils.load_customers(request.args.get('customer_name'), request.args.get('maPhieuKham'), request.args.get('phoneNumber'))
+
+        return self.render('admin/doctor_medicalRecord.html', search_customers=search_customers, now=now)
+
+
+class appoinments(NurseView):
+    @expose('/')
+    def __index__(self):
+        now = datetime.now()
+        cus = utils.load_sche()
+        list_wasnt_sche = utils.list_cus_wasnt_axam(now)
+
+        return self.render('admin/nurse_appoinments.html', cus=cus, now=now, list_wasnt_sche=list_wasnt_sche)
+
+
+class payment(NurseView):
+    @expose('/')
+    def __index__(self):
+        rq = request.args.get('receipt-history', 0)
+        if not rq:
+            #danh sach cho thanh toan
+            orders_list_need_to_checkout = utils.get_orders_need_to_checkout()     #[(cus_id, medical_id),...]
+            checkout_orders = []
+            count = -1
+            for order in orders_list_need_to_checkout:
+                count += 1
+                customer = utils.get_customer_by_id(order[0])
+                checkout_orders.append([])
+                checkout_orders[count].append(order[1])  #medical_id
+                checkout_orders[count].append(customer.first_name + ' ' + customer.last_name)         #customer_name
+                checkout_orders[count].append(customer.birthday.year)
+                checkout_orders[count].append(utils.format_currency_vi(utils.get_total_price_in_receipt(order[1])))
+
+            return self.render('admin/payment.html', checkout_orders=checkout_orders, order_checkout_num=count+1)
+        else:
+
+            return self.render('admin/receipt_history.html')
+
+
 admin = Admin(app=app, template_mode='Bootstrap4', name='PHÒNG MẠCH',
               index_view=General(name="Tổng quan"))
 
 admin.add_view(ManagerStatistics(name='Thống kê'))
+
+#nurse view
+admin.add_view(appoinments(name='Đặt hẹn'))
+admin.add_view(payment(name='Thanh toán'))
+
+
 #medicine quản lý
 admin.add_view(ManageMedicine(Medicine, db.session, category="Quản lý", name='Kho thuốc'))
 admin.add_view(ManageMedicine(MedicineType, db.session, category="Quản lý", name='Kho đơn vị'))
 admin.add_sub_category(parent_name="Quản lý", name="ManageMedicine")
-
 admin.add_sub_category(name="Links", parent_name="Team")
 admin.add_view(ManagerRegulation(name='Quy định'))
 admin.add_view(AccountSet(name='Tài khoản'))

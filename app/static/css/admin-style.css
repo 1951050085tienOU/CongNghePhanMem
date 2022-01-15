@@ -1,3 +1,4 @@
+
 /* CSS FOR ACCOUNT SET */
 .aTag-not-have-href a {
     color: #007bff !important;
@@ -20,4 +21,21 @@ div#pass-new-again {
 }
 .status-true-false {
     width: 5vw;
+}
+
+/* bootstrap change table  */
+.my-custom-scrollbar {
+position: relative;
+height: 175px;
+overflow: auto;
+}
+.table-wrapper-scroll-y {
+display: block;
+}
+
+/* badge top */
+.cus-top-badge {
+    position: absolute !important;
+    top: 0 !important;
+    right: 0 !important;
 }

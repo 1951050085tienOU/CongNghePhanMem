@@ -12,8 +12,8 @@
                             class="font-weight-normal">{{ user_role }}</span></p>
                     <p class="'d-inline font-weight-bold">Họ tên: <span
                             class="font-weight-normal">{{ user_first_name + ' ' + user_last_name }}</span></p>
-                    <p class="'d-inline font-weight-bold">Tuổi: <span
-                            class="font-weight-normal">{{ user_age }}</span></p>
+                    <p class="'d-inline font-weight-bold">Tuổi: <span id="user_age"
+                            class="font-weight-normal"></span></p>
                     <p class="'d-inline font-weight-bold">Số điện thoại: <span
                             class="font-weight-normal">{{ user_phone }}</span></p></br>
                     <a class="'d-inline" href="#" class="link-info" data-toggle="modal"
@@ -49,7 +49,7 @@
                                   <div class="d-row d-md-flex py-2">
                                    <label class="col-md-4" style='text-align: left !important' for="birthday">Ngày sinh</label>
                                    <input class="col-md-8 w-100" type="date" style='text-align: center !important;' name="birthday"
-                                           value="{{ user_birth }}"/>
+                                           value="{{ user_birthday }}"/>
                                 </div>
                                   <div class="d-row d-md-flex py-2">
                                     <label class="col-md-4" style='text-align: left !important' for="phone">Số điện thoại</label>
@@ -116,6 +116,9 @@
                 //
             {% endif %}
         }
+
+        let user_age = (new Date()).getFullYear() - {{ user_birthday.year }}
+        document.getElementById('user_age').textContent = user_age
 
         document.getElementById('image-choose').onchange = function() {
             document.getElementById('submit-avatar').click();
