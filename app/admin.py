@@ -159,8 +159,8 @@ class ManagerStatistics(ManagerView):
             'text': 'Tròn'
         }]
         type = request.args.get('chart')
-        utils.pdf_create_medicine_usage(year, month, utils.revenue_stats(year, month, doanhthu))
-
+        revenue_stats = utils.revenue_stats(month=month, year=year, doanhthu=doanhthu)
+        utils.pdf_month_revenue(year, month, revenue_stats)
         return self.render('admin/manager_statistics.html',
                            revenue_stats=utils.revenue_stats(month=month, year=year, doanhthu=doanhthu),
                            examination_stats=utils.examination_stats(month=month, year=year),
