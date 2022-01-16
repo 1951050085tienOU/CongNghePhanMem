@@ -7,10 +7,8 @@ from sqlalchemy.orm import session, query
 from sqlalchemy import func, extract
 from app.models import *
 from flask_login import current_user
-from flask import session, request, url_for
+from flask import session, request
 import hashlib
-from fpdf import FPDF
-from os import path
 
 
 def check_password(username, password):          #kiểm tra mật khẩu, tài khoản trên database
@@ -43,11 +41,11 @@ def revenue_stats_by_day(month, year):  #Thống kê doanh thu mỗi ngày trong
     return p.all()
 
 
-def revenue_stats(month, year, doanhthu):
+def revenue_stats(month,doanhthu):
     p = db.session.query(extract('day', Receipt.created_date), func.count(Customer.id),
                          func.sum(Receipt.total_price), (func.sum(Receipt.total_price)/doanhthu)*100)\
                         .join(Customer, Receipt.customer_id.__eq__(Customer.id))\
-                        .filter(extract('month', Receipt.created_date) == month, extract('year', Receipt.created_date) == year)\
+                        .filter(extract('month', Receipt.created_date) == month)\
                         .group_by(extract('day', Receipt.created_date))\
                         .order_by(extract('day', Receipt.created_date))
     return p.all()
@@ -135,24 +133,22 @@ def medine_stock_percent_over_5():             #lấy danh sách phần trăm th
     return list_off
 
 
-def examination_stats(month, year):
+def examination_stats(month):
     p = db.session.query(extract('day', Schedule.examination_date), func.count(CustomerSche.customer_id))\
                         .join(Customer, CustomerSche.customer_id.__eq__(Customer.id))\
                         .join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
-                        .filter(CustomerSche.examined == True, extract('month', Schedule.examination_date) == month,
-                                extract('year', Schedule.examination_date) == year)\
+                        .filter(CustomerSche.examined == True)\
+                        .filter(extract('month', Schedule.examination_date) == month)\
                         .group_by(extract('day', Schedule.examination_date))\
                         .order_by(extract('day', Schedule.examination_date))
     return p.all()
 
 
-def medicine_stats(month,year):
-    return Medicine.query.join(MedicalBillDetail, MedicalBillDetail.medicine.__eq__(Medicine.id))\
-        .join(MedicalBill, MedicalBillDetail.medical_bill.__eq__(MedicalBill.id))\
-        .join(Receipt, Receipt.medical_bill.__eq__(MedicalBill.id))\
-        .filter(extract('month', Receipt.created_date) == month, extract('year', Receipt.created_date) == year)\
-        .add_columns(func.sum(MedicalBillDetail.quantity)).add_columns(func.count(MedicalBillDetail.medicine))\
-        .order_by(Medicine.id).group_by(Medicine.id).all()
+def medicine_stats():
+    return db.session.query(Medicine.name, Medicine.quantity)\
+                        .filter(Medicine.quantity>0)\
+                        .group_by(Medicine.name).all()
+
 
 def medicine_fill():
     return Medicine.query.filter(Medicine.quantity>0, Medicine.quantity<10).all()
@@ -541,15 +537,11 @@ def load_customers(name=None, phone=None, codeMedicalBill=None, address=None):
                 return p
 
 
-def load_sche(name=None, phone=None, address=None):
-    customer = Customer.query
-    if name:
-        customer = customer.filter(Customer.first_name.__eq__(name))
-    if phone:
-        customer = customer.filter(Customer.phone_number(phone))
-    if address:
-        customer = customer.filter(Customer.address_id(address))
-    return customer.all()
+def load_sche(date):
+    return Customer.query.join(CustomerSche, Customer.id.__eq__(CustomerSche.customer_id)) \
+        .filter(extract('year', Customer.appointment_date) == date.year,
+                extract('month', Customer.appointment_date) == date.month,
+                extract('day', Customer.appointment_date) == date.day).all()
 
 
 #danh sách khách đã được xác nhận lịch hẹn-y tá
@@ -560,8 +552,26 @@ def list_cus_was_sche(date):
 
 #danh sách khách chưa được xác nhận lịch hẹn-y tá
 def list_cus_wasnt_axam(date):
-    return Customer.query.join(CustomerSche, Customer.id.__eq__(CustomerSche.customer_id)) \
-                       .filter(CustomerSche.examined == False, Customer.was_scheduled == False).all()
+    return Customer.query.filter(extract('year', Customer.appointment_date) == date.year,
+                extract('month', Customer.appointment_date) == date.month,
+                extract('day', Customer.appointment_date) == date.day, Customer.was_scheduled == False).all()
+
+#tìm khách hàng chưa dc xác nhận lịch hẹn
+def search_customer_not_sche(date, phone_number):
+    return Customer.query.join(CustomerSche, CustomerSche.customer_id.__eq__(Customer.id))\
+        .filter(Customer.phone_number.__eq__(phone_number), Customer.was_scheduled == False,
+                extract('year', Customer.appointment_date) == date.year,
+                extract('month', Customer.appointment_date) == date.month,
+                extract('day', Customer.appointment_date) == date.day).first()
+
+#lấy sô lượng đơn hẹn chưa xác nhận
+def get_count_cus_wasnt_exam(date):
+    all_in_date = list_cus_wasnt_axam(date)
+    count = 0
+    for order in all_in_date:
+        count += 1
+    return count
+
 
 
 #Tạo lịch hẹn mới trên gd y tá
@@ -581,11 +591,11 @@ def add_new_appoinment(first_name, last_name, birthday, phone_number, gender_id,
 
 #Hàm sắp xêp lịch hẹn khách hàng
 def sorted_schedule(date):
-    sorted_sche = db.session.query(Schedule.examination_date).filter(extract('day', Schedule.examination_date) == date.day,
-                                                              extract('month', Schedule.examination_date) == date.month,
-                                                              extract('year', Schedule.examination_date) == date.year)\
-        .order_by(Schedule.examination_date).all()
-    return sorted(sorted_sche)
+    return Customer.query.join(CustomerSche, Customer.id.__eq__(CustomerSche.customer_id))\
+        .join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+        .filter(extract('day', Schedule.examination_date) == date.day,
+                extract('month', Schedule.examination_date) == date.month,
+                extract('year', Schedule.examination_date) == date.year).order_by(Schedule.examination_date).all()
 
 
 def get_customer_sche_information(customer_sche_id):
@@ -695,11 +705,8 @@ def get_receipt_history(phone_number):
 
             #ngày, tiền
             receipt = db.session.query(Receipt).filter(Receipt.customer_id == customer.id).first()
-            if receipt:
-                new_obj.created_date = receipt.created_date
-                new_obj.total = receipt.total_price
-            else:
-                return None
+            new_obj.created_date = receipt.created_date
+            new_obj.total = receipt.total_price
 
             #bác sĩ là ai, triệu chứng, chẩn đoán
             medical_bill = get_medical_bill_by_id(receipt.medical_bill)
@@ -721,279 +728,29 @@ def get_receipt_history(phone_number):
             list_re.append(new_obj)
     return list_re
 
-
-def pdf_create_receipt(medical_bill_id):
-    #data
-    customer = db.session.query(Customer, Schedule, CustomerSche).filter(CustomerSche.customer_id == Customer.id,
-                                                                         CustomerSche.id == MedicalBill.customer_sche,
-                                                                         MedicalBill.id == medical_bill_id,
-                                                                         Schedule.id == CustomerSche.schedule_id)\
-        .first()
-    this_customer_name = customer[0].first_name + ' ' + customer[0].last_name
-    this_schedule_time = str(customer[1].examination_date) + ' ' + str(customer[2].timer)
-
-    amount_money = format_currency_vi(get_total_price_in_receipt(medical_bill_id))
-    total = amount_money[0]
-    medical_price = amount_money[1]
-    medicine_price = amount_money[2]
-
-    data = [
-        "HÓA ĐƠN THANH TOÁN",
-        "Họ tên: ", "Ngày khám: ",
-        "Tiền khám ", "Tiền thuốc: ",
-        "Tổng tiền: "
-    ]
-
-    col = [47.5, 47.5, 47.5, 47.5]
-    # coding: utf8
-
-    pdf = FPDF(orientation='landscape', format='A5')
-    pdf.add_page()
-    pdf.add_font("Arial", "", "c:\\Windows\\fonts\\arial.ttf", uni=True)
-    pdf.set_font("Arial", size=13)
-    line_height = pdf.font_size * 2.5
-    pdf.cell(col[0] + col[1] + col[2] + col[3], line_height, data[0], ln=True, border=1, align="C")
-    pdf.cell(col[0] + col[1], line_height, data[1] + this_customer_name, border=1, align="L")
-    pdf.cell(col[2] + col[3], line_height, data[2] + this_schedule_time, border=1, align="L")
-    pdf.ln(line_height)
-    pdf.cell(col[0] + col[1], line_height, data[3] + medical_price, border=1, align="L")
-    pdf.cell(col[2] + col[3], line_height,  data[4] + medicine_price, border=1, align="L")
-    pdf.ln(line_height)
-    pdf.cell(col[0] + col[1] + col[2] + col[3], line_height, data[5] + total, border=1, align="L")
-    pdf.output(path.dirname(path.abspath(__file__)) +
-               url_for('static', filename='export/receipt.pdf'))
-
-
-def pdf_create_examine_list_in_date(date_check):        #danh sách khám bệnh
-    if date_check is datetime:
-        date_check = date_check.date()
-    #data
-    data_list = []     #[ [hoten, gioitinh, namsinh, diachi] ,    ]
-
-
-    data = [
-        "DANH SÁCH KHÁM BỆNH",
-        "Ngày khám: ",
-        "STT: ", "Họ tên", "Giới tính", "Năm sinh", "Địa chỉ"
-    ]
-
-    col = [11.875, 71.25, 35.625, 35.625, 35.625]
-    # coding: utf8
-
-    pdf = FPDF(orientation='landscape', format='A5')
-    pdf.add_page()
-    pdf.add_font("Arial", "", "c:\\Windows\\fonts\\arial.ttf", uni=True)
-    pdf.set_font("Arial", size=13)
-    line_height = pdf.font_size * 2.5
-    pdf.cell(col[0] + col[1] + col[2] + col[3] + col[4], line_height, data[0], ln=True, border=1, align="C")
-    pdf.cell(col[0] + col[1] + col[2] + col[3] + col[4], line_height, data[1], ln=True, border=1, align="C")
-    pdf.cell(col[0], line_height, data[2], border=1, align="C")
-    pdf.cell(col[1], line_height, data[3], border=1, align="C")
-    pdf.cell(col[2], line_height, data[4], border=1, align="C")
-    pdf.cell(col[3], line_height, data[5], border=1, align="C")
-    pdf.cell(col[4], line_height, data[6], border=1, align="C")
-    pdf.ln(line_height)
-    count = 0
-    if data_list:
-        for customer in data_list:
-            count += 1
-            pdf.cell(col[0], line_height, str(count), border=1, align="C")
-            pdf.cell(col[1], line_height, str(customer[0]), border=1, align="L")
-            pdf.cell(col[2], line_height, str(customer[1]), border=1, align="C")
-            pdf.cell(col[3], line_height, str(customer[2]), border=1, align="C")
-            pdf.cell(col[4], line_height, str(customer[3]), border=1, align="L")
-            pdf.ln(line_height)
-
-    pdf.output(path.dirname(path.abspath(__file__)) +
-               url_for('static', filename='export/examination_list.pdf'))
-
-
-def pdf_create_medical_bill(medical_bill_id):
-    medical_bill = get_medical_bill_by_id(medical_bill_id)
-    customer_sche = db.session.query(CustomerSche).filter(medical_bill.customer_sche == CustomerSche.id).first()
-    schedule = db.session.query(Schedule).filter(customer_sche.schedule_id == Schedule.id).first()
-    customer = db.session.query(Customer).filter(customer_sche.customer_id == Customer.id).first()
-
-    # [(thuốc, đơn vị, số lượng, cách dùng), (thuốc, đơn vị, số lượng, cách dùng), ...]
-    medicines = db.session.query(Medicine.name, Medicine.unit, MedicalBillDetail.quantity, MedicalBillDetail.how_to_use)\
-        .filter(MedicalBillDetail.medical_bill == medical_bill_id, MedicalBillDetail.medicine == Medicine.id).all()
-
-    this_customer_name = customer.first_name + " " + customer.last_name
-    this_customer_schedule = str(schedule.examination_date) + ' ' + str(customer_sche.timer)
-
-
-    data = [
-        "PHIẾU KHÁM BỆNH",
-        "Họ tên: ", "Ngày khám: ",
-        "Triệu chứng: ", "Dự đoán loại bệnh: "
-        "STT: ", "Thuốc", "Đơn vị", "Số lượng", "Cách dùng"
-    ]
-
-    col = [11.875, 71.25, 35.625, 35.625, 35.625]
-    # coding: utf8
-
-    pdf = FPDF(orientation='landscape', format='A5')
-    pdf.add_page()
-    pdf.add_font("Arial", "", "c:\\Windows\\fonts\\arial.ttf", uni=True)
-    pdf.set_font("Arial", size=13)
-    line_height = pdf.font_size * 2.5
-    pdf.cell(col[0] + col[1] + col[2] + col[3] + col[4], line_height, data[0], ln=True, border=1, align="C")
-    pdf.cell(95, line_height, data[1] + this_customer_name, border=1, align="L")
-    pdf.cell(95, line_height, data[2] + this_customer_schedule, border=1, align="L")
-    pdf.ln(line_height)
-    pdf.cell(95, line_height, data[3] + medical_bill.symptom, border=1, align="L")
-    pdf.cell(95, line_height, data[4] + medical_bill.diagnostic_disease, border=1, align="L")
-    pdf.ln(line_height)
-
-    count = 0
-    if medicines:
-        for medicine in medicines:
-            count += 1
-            pdf.cell(col[0], line_height, str(count), border=1, align="C")
-            pdf.cell(col[1], line_height, str(medicine[0]), border=1, align="L")
-            pdf.cell(col[2], line_height, str(medicine[1]), border=1, align="C")
-            pdf.cell(col[3], line_height, str(medicine[2]), border=1, align="C")
-            pdf.cell(col[4], line_height, str(medicine[3]), border=1, align="L")
-            pdf.ln(line_height)
-
-    pdf.output(path.dirname(path.abspath(__file__)) +
-               url_for('static', filename='export/medical_bill.pdf'))
-
-
-def pdf_month_revenue(year, month, data_list): # data_list = [('ngày', 'số bệnh nhân', 'int||float:Doanh thu', 'Tỷ lệ')]
-    data = [
-        "BÁO CÁO DOANH THU THEO THÁNG",
-        "Tháng: ",
-        "STT", "Ngày", "Số bệnh nhân", "Doanh thu", "Tỷ lệ",
-        "Tổng doanh thu: "
-    ]
-
-    col = [11.875, 71.25, 35.625, 35.625, 35.625]
-    # coding: utf8
-
-    pdf = FPDF(orientation='landscape', format='A5')
-    pdf.add_page()
-    pdf.add_font("Arial", "", "c:\\Windows\\fonts\\arial.ttf", uni=True)
-    pdf.set_font("Arial", size=13)
-    line_height = pdf.font_size * 2.5
-    pdf.cell(col[0] + col[1] + col[2] + col[3] + col[4], line_height, data[0], ln=True, border=1, align="C")
-    pdf.cell(col[0] + col[1] + col[2] + col[3] + col[4], line_height, data[1] + str(year) + '/' + str(month),
-             ln=True, border=1, align="C")
-    pdf.cell(col[0], line_height, data[2], border=1, align="C")
-    pdf.cell(col[1], line_height, data[3], border=1, align="C")
-    pdf.cell(col[2], line_height, data[4], border=1, align="C")
-    pdf.cell(col[3], line_height, data[5], border=1, align="C")
-    pdf.cell(col[4], line_height, data[6], border=1, align="C")
-    pdf.ln(line_height)
-
-    count = 0
-    doanh_thu = 0
-    if data_list:
-        for data_child in data_list:
-            count += 1
-            pdf.cell(col[0], line_height, str(count), border=1, align="C")
-            pdf.cell(col[1], line_height, str(data_child[0]), border=1, align="C")
-            pdf.cell(col[2], line_height, str(data_child[1]), border=1, align="C")
-            doanh_thu += data_child[2]
-            pdf.cell(col[3], line_height, str(data_child[2]), border=1, align="C")
-            pdf.cell(col[4], line_height, str(data_child[3]), border=1, align="C")
-            pdf.ln(line_height)
-
-    pdf.cell(col[0] + col[1] + col[2] + col[3] + col[4], line_height, data[7] + str(doanh_thu), ln=True, border=1,
-             align="L")
-    pdf.output(path.dirname(path.abspath(__file__)) +
-               url_for('static', filename='export/revenue_statistics.pdf'))
-
-
-def pdf_create_medicine_usage(year, month, data_list): #data_list = [(Thuoc, đơn vị tính, số lượng, số lần dùng), ...]
-    data = [
-        "BÁO CÁO SỬ DỤNG THUỐC",
-        "Tháng: ",
-        "STT", "Thuốc", "Đơn vị tính", "Số lượng", "Số lần dùng",
-        "Tổng doanh thu: "
-    ]
-
-    col = [11.875, 71.25, 35.625, 35.625, 35.625]
-    # coding: utf8
-
-    pdf = FPDF(orientation='landscape', format='A5')
-    pdf.add_page()
-    pdf.add_font("Arial", "", "c:\\Windows\\fonts\\arial.ttf", uni=True)
-    pdf.set_font("Arial", size=13)
-    line_height = pdf.font_size * 2.5
-    pdf.cell(col[0] + col[1] + col[2] + col[3] + col[4], line_height, data[0], ln=True, border=1, align="C")
-    pdf.cell(col[0] + col[1] + col[2] + col[3] + col[4], line_height, data[1] + str(year) + '/' + str(month),
-             ln=True, border=1, align="C")
-    pdf.cell(col[0], line_height, data[2], border=1, align="C")
-    pdf.cell(col[1], line_height, data[3], border=1, align="C")
-    pdf.cell(col[2], line_height, data[4], border=1, align="C")
-    pdf.cell(col[3], line_height, data[5], border=1, align="C")
-    pdf.cell(col[4], line_height, data[6], border=1, align="C")
-    pdf.ln(line_height)
-
-    count = 0
-    doanh_thu = 0
-    if data_list:
-        for data_child in data_list:
-            count += 1
-            pdf.cell(col[0], line_height, str(count), border=1, align="C")
-            pdf.cell(col[1], line_height, str(data_child[0]), border=1, align="C")
-            pdf.cell(col[2], line_height, str(data_child[1]), border=1, align="C")
-            doanh_thu += data_child[2]
-            pdf.cell(col[3], line_height, str(data_child[2]), border=1, align="C")
-            pdf.cell(col[4], line_height, str(data_child[3]), border=1, align="C")
-            pdf.ln(line_height)
-
-    pdf.output(path.dirname(path.abspath(__file__)) +
-               url_for('static', filename='export/medicine_usage.pdf'))
-
-
-def tim_khach_hang(sdt, **kwargs):
-    return Customer.query.filter(Customer.phone_number.__eq__(sdt)).first()
-
-
-def lich_su_kham(customer_id, medical_id=None):
-    if medical_id:
-        return MedicalBill.query.join(CustomerSche, MedicalBill.customer_sche.__eq__(CustomerSche.id)).\
-        join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id)).add_columns(Schedule.examination_date)\
-        .join(Customer, CustomerSche.customer_id.__eq__(Customer.id))\
-        .filter(MedicalBill.id.__eq__(medical_id)).add_columns(Customer.first_name)\
-        .add_columns(Customer.last_name).add_columns(extract('year', Customer.birthday)).all()
-    else:
-        return MedicalBill.query.join(CustomerSche, MedicalBill.customer_sche.__eq__(CustomerSche.id)).\
-            join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id)).add_columns(Schedule.examination_date)\
-            .join(Customer, CustomerSche.customer_id.__eq__(Customer.id))\
-            .filter(CustomerSche.customer_id.__eq__(customer_id)).add_columns(Customer.first_name)\
-            .add_columns(Customer.last_name).add_columns(extract('year', Customer.birthday)).group_by(MedicalBill.id)\
-            .order_by(MedicalBill.id).all()
-
-
-def get_medicine_by_name(name):
-    return Medicine.query.filter(Medicine.name.__eq__(name)).first()
-
-
-def add_medical_bill(cs, medicalinfo, medicinebilldetails):
-    medicalbill = MedicalBill(user=current_user, symptom=medicalinfo['trieuchung'],
-                              diagnostic_disease=medicalinfo['benhchuandoan'], customer_sche=cs.id)
-    db.session.add(medicalbill)
+def confirm_sche():
+    confirm = Customer.was_scheduled('True')
+    db.session.add(confirm)
     db.session.commit()
-    for m in medicinebilldetails:
-        m = MedicalBillDetail(medicalbill=medicalbill, medicine=m['id'], quantity=m['quantity'],
-                              how_to_use=m['how_to_use'], unit_price=m['quantity']*(Medicine.query.get(m['id']).price))
-        db.session.add(m)
-    db.session.commit()
-    return update_customersche(medicalbill.id)
 
-
-def update_customersche(id):
-    c = CustomerSche.query.join(MedicalBill, MedicalBill.customer_sche.__eq__(CustomerSche.id)) \
-        .filter(MedicalBill.id.__eq__(id)).first()
-    c.examined = True
+def add_customer_sche(customer_id,schedule_id, timer):
+    c = CustomerSche(customer_id=customer_id, schedule_id=schedule_id, timer=timer)
     db.session.add(c)
+    Customer.query.get(customer_id).was_scheduled=True
     db.session.commit()
     return c
 
+def get_schedule_by_date(date):
+    return Schedule.query.filter(Schedule.examination_date.__eq__(date)).first()
 
-def get_customersche(customer_id, date):
-    return CustomerSche.query.join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
-        .filter(Schedule.examination_date == date, CustomerSche.customer_id.__eq__(customer_id)).first()
+def add_schedule(date):
+    s = Schedule(examination_date=date)
+    db.session.add(s)
+    db.session.commit()
+    return s
+
+def cancel_customersche(id):
+    date = Customer.query.get(id).appointment_date
+    Customer.query.get(id).appointment_date = datetime(date.year,date.month, date.day+1, 0)
+    db.session.commit()
+    return Customer.query.get(id)
