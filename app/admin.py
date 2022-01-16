@@ -159,10 +159,15 @@ class ManagerStatistics(ManagerView):
             'text': 'Tròn'
         }]
         type = request.args.get('chart')
+
+        thong_ke_doanh_thu = utils.revenue_stats(month=month, doanhthu=doanhthu)
+        utils.pdf_month_revenue(year=now.year, month=month, data_list=thong_ke_doanh_thu)
+        #utils.pdf_create_medicine_usage(year, month,)     //tao file pdf
+
         return self.render('admin/manager_statistics.html',
-                           revenue_stats=utils.revenue_stats(month=month, doanhthu=doanhthu),
-                           examination_stats=utils.examination_stats(month=month),
-                           medicine_stats=utils.medicine_stats(), thuoc_bo_sung=utils.thuoc_bo_sung(),
+                           revenue_stats=utils.revenue_stats(month=month, year=year, doanhthu=doanhthu),
+                           examination_stats=utils.examination_stats(month=month, year=year),
+                           medicine_stats=utils.medicine_stats(month=month, year=year), thuoc_bo_sung=utils.thuoc_bo_sung(),
                            thuoc_het_sl=utils.thuoc_het_sl(), thuoc_ton_kho=utils.thuoc_ton_kho(),
                            thuoc_da_dung=utils.thuoc_da_dung(), types=types, type=type, now=now,
                            month=month, year=year)
@@ -264,7 +269,7 @@ class AccountSet(ModelAuthenticated):
         mode = request.args.get('password_model_change', 0, type=int)
         user = utils.get_user_information()
 
-        if not mode:    #thông thường
+        if mode == 0:    #thông thường
             if request.data:
                 data = request.form
                 utils.edit_user_information(user.id, request.form.get('first_name'), request.form.get('last_name'),
@@ -297,8 +302,10 @@ class AccountSet(ModelAuthenticated):
                                user_first_name=user_first_name, user_last_name=user_last_name, user_phone=user_phone,
                                user_birthday=user_birthday, user_avatar=user_avatar, user_birth=user.birthday,
                                user_gender=str(user_gender_id))
-        else:     #mode thay đổi mật khẩu)
+        elif mode == 1:     #mode thay đổi mật khẩu)
             return self.render('admin/change_password.html', current_password=user.password)
+        else:
+            return self.render('temp.html')
 
 
 class LogOutUser(BaseView):

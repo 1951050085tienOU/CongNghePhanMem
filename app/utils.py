@@ -43,11 +43,11 @@ def revenue_stats_by_day(month, year):  #Thống kê doanh thu mỗi ngày trong
     return p.all()
 
 
-def revenue_stats(month, doanhthu):
+def revenue_stats(month, year, doanhthu):
     p = db.session.query(extract('day', Receipt.created_date), func.count(Customer.id),
                          func.sum(Receipt.total_price), (func.sum(Receipt.total_price)/doanhthu)*100)\
                         .join(Customer, Receipt.customer_id.__eq__(Customer.id))\
-                        .filter(extract('month', Receipt.created_date) == month)\
+                        .filter(extract('month', Receipt.created_date) == month, extract('year', Receipt.created_date) == year)\
                         .group_by(extract('day', Receipt.created_date))\
                         .order_by(extract('day', Receipt.created_date))
     return p.all()
@@ -135,22 +135,24 @@ def medine_stock_percent_over_5():             #lấy danh sách phần trăm th
     return list_off
 
 
-def examination_stats(month):
+def examination_stats(month, year):
     p = db.session.query(extract('day', Schedule.examination_date), func.count(CustomerSche.customer_id))\
                         .join(Customer, CustomerSche.customer_id.__eq__(Customer.id))\
                         .join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
-                        .filter(CustomerSche.examined == True)\
-                        .filter(extract('month', Schedule.examination_date) == month)\
+                        .filter(CustomerSche.examined == True, extract('month', Schedule.examination_date) == month,
+                                extract('year', Schedule.examination_date) == year)\
                         .group_by(extract('day', Schedule.examination_date))\
                         .order_by(extract('day', Schedule.examination_date))
     return p.all()
 
 
-def medicine_stats():
-    return db.session.query(Medicine.name, Medicine.quantity)\
-                        .filter(Medicine.quantity>0)\
-                        .group_by(Medicine.name).all()
-
+def medicine_stats(month,year):
+    return Medicine.query.join(MedicalBillDetail, MedicalBillDetail.medicine.__eq__(Medicine.id))\
+        .join(MedicalBill, MedicalBillDetail.medical_bill.__eq__(MedicalBill.id))\
+        .join(Receipt, Receipt.medical_bill.__eq__(MedicalBill.id))\
+        .filter(extract('month', Receipt.created_date) == month, extract('year', Receipt.created_date) == year)\
+        .add_columns(func.sum(MedicalBillDetail.quantity)).add_columns(func.count(MedicalBillDetail.medicine))\
+        .order_by(Medicine.id).group_by(Medicine.id).all()
 
 def medicine_fill():
     return Medicine.query.filter(Medicine.quantity>0, Medicine.quantity<10).all()
@@ -900,7 +902,7 @@ def pdf_month_revenue(year, month, data_list): # data_list = [('ngày', 'số b�
     pdf.cell(col[0] + col[1] + col[2] + col[3] + col[4], line_height, data[7] + str(doanh_thu), ln=True, border=1,
              align="L")
     pdf.output(path.dirname(path.abspath(__file__)) +
-               url_for('static', filename='revenue_statistics.pdf'))
+               url_for('static', filename='export/revenue_statistics.pdf'))
 
 
 def pdf_create_medicine_usage(year, month, data_list): #data_list = [(Thuoc, đơn vị tính, số lượng, số lần dùng), ...]
@@ -945,8 +947,10 @@ def pdf_create_medicine_usage(year, month, data_list): #data_list = [(Thuoc, đ�
     pdf.output(path.dirname(path.abspath(__file__)) +
                url_for('static', filename='export/medicine_usage.pdf'))
 
+
 def tim_khach_hang(sdt, **kwargs):
     return Customer.query.filter(Customer.phone_number.__eq__(sdt)).first()
+
 
 def lich_su_kham(customer_id, medical_id=None):
     if medical_id:
