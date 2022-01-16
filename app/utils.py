@@ -43,7 +43,7 @@ def revenue_stats_by_day(month, year):  #Thống kê doanh thu mỗi ngày trong
     return p.all()
 
 
-def revenue_stats(month,doanhthu):
+def revenue_stats(month, doanhthu):
     p = db.session.query(extract('day', Receipt.created_date), func.count(Customer.id),
                          func.sum(Receipt.total_price), (func.sum(Receipt.total_price)/doanhthu)*100)\
                         .join(Customer, Receipt.customer_id.__eq__(Customer.id))\
@@ -693,8 +693,11 @@ def get_receipt_history(phone_number):
 
             #ngày, tiền
             receipt = db.session.query(Receipt).filter(Receipt.customer_id == customer.id).first()
-            new_obj.created_date = receipt.created_date
-            new_obj.total = receipt.total_price
+            if receipt:
+                new_obj.created_date = receipt.created_date
+                new_obj.total = receipt.total_price
+            else:
+                return None
 
             #bác sĩ là ai, triệu chứng, chẩn đoán
             medical_bill = get_medical_bill_by_id(receipt.medical_bill)
@@ -756,7 +759,7 @@ def pdf_create_receipt(medical_bill_id):
     pdf.ln(line_height)
     pdf.cell(col[0] + col[1] + col[2] + col[3], line_height, data[5] + total, border=1, align="L")
     pdf.output(path.dirname(path.abspath(__file__)) +
-               url_for('static', filename='export/' + 'receipt_in_medical_' + medical_bill_id + '.pdf'))
+               url_for('static', filename='export/receipt.pdf'))
 
 
 def pdf_create_examine_list_in_date(date_check):        #danh sách khám bệnh
@@ -793,14 +796,14 @@ def pdf_create_examine_list_in_date(date_check):        #danh sách khám bệnh
         for customer in data_list:
             count += 1
             pdf.cell(col[0], line_height, str(count), border=1, align="C")
-            pdf.cell(col[1], line_height, customer[0], border=1, align="L")
-            pdf.cell(col[2], line_height, customer[1], border=1, align="C")
-            pdf.cell(col[3], line_height, customer[2], border=1, align="C")
-            pdf.cell(col[4], line_height, customer[3], border=1, align="L")
+            pdf.cell(col[1], line_height, str(customer[0]), border=1, align="L")
+            pdf.cell(col[2], line_height, str(customer[1]), border=1, align="C")
+            pdf.cell(col[3], line_height, str(customer[2]), border=1, align="C")
+            pdf.cell(col[4], line_height, str(customer[3]), border=1, align="L")
             pdf.ln(line_height)
 
     pdf.output(path.dirname(path.abspath(__file__)) +
-               url_for('static', filename='export/' + 'examine_list_' + str(date).replace('/', '_') + '.pdf'))
+               url_for('static', filename='export/examination_list.pdf'))
 
 
 def pdf_create_medical_bill(medical_bill_id):
@@ -845,14 +848,14 @@ def pdf_create_medical_bill(medical_bill_id):
         for medicine in medicines:
             count += 1
             pdf.cell(col[0], line_height, str(count), border=1, align="C")
-            pdf.cell(col[1], line_height, medicine[0], border=1, align="L")
-            pdf.cell(col[2], line_height, medicine[1], border=1, align="C")
-            pdf.cell(col[3], line_height, medicine[2], border=1, align="C")
-            pdf.cell(col[4], line_height, medicine[3], border=1, align="L")
+            pdf.cell(col[1], line_height, str(medicine[0]), border=1, align="L")
+            pdf.cell(col[2], line_height, str(medicine[1]), border=1, align="C")
+            pdf.cell(col[3], line_height, str(medicine[2]), border=1, align="C")
+            pdf.cell(col[4], line_height, str(medicine[3]), border=1, align="L")
             pdf.ln(line_height)
 
     pdf.output(path.dirname(path.abspath(__file__)) +
-               url_for('static', filename='export/' + 'medical_bil_' + medical_bill_id + '.pdf'))
+               url_for('static', filename='export/medical_bill.pdf'))
 
 
 def pdf_month_revenue(year, month, data_list): # data_list = [('ngày', 'số bệnh nhân', 'int||float:Doanh thu', 'Tỷ lệ')]
@@ -887,17 +890,17 @@ def pdf_month_revenue(year, month, data_list): # data_list = [('ngày', 'số b�
         for data_child in data_list:
             count += 1
             pdf.cell(col[0], line_height, str(count), border=1, align="C")
-            pdf.cell(col[1], line_height, data_child[0], border=1, align="C")
-            pdf.cell(col[2], line_height, data_child[1], border=1, align="C")
+            pdf.cell(col[1], line_height, str(data_child[0]), border=1, align="C")
+            pdf.cell(col[2], line_height, str(data_child[1]), border=1, align="C")
             doanh_thu += data_child[2]
-            pdf.cell(col[3], line_height, data_child[2], border=1, align="C")
-            pdf.cell(col[4], line_height, data_child[3], border=1, align="C")
+            pdf.cell(col[3], line_height, str(data_child[2]), border=1, align="C")
+            pdf.cell(col[4], line_height, str(data_child[3]), border=1, align="C")
             pdf.ln(line_height)
 
     pdf.cell(col[0] + col[1] + col[2] + col[3] + col[4], line_height, data[7] + str(doanh_thu), ln=True, border=1,
              align="L")
     pdf.output(path.dirname(path.abspath(__file__)) +
-               url_for('static', filename='export/' + 'month_revenue_' + str(year) + '/' + str(month) + '.pdf'))
+               url_for('static', filename='revenue_statistics.pdf'))
 
 
 def pdf_create_medicine_usage(year, month, data_list): #data_list = [(Thuoc, đơn vị tính, số lượng, số lần dùng), ...]
@@ -932,12 +935,12 @@ def pdf_create_medicine_usage(year, month, data_list): #data_list = [(Thuoc, đ�
         for data_child in data_list:
             count += 1
             pdf.cell(col[0], line_height, str(count), border=1, align="C")
-            pdf.cell(col[1], line_height, data_child[0], border=1, align="C")
-            pdf.cell(col[2], line_height, data_child[1], border=1, align="C")
+            pdf.cell(col[1], line_height, str(data_child[0]), border=1, align="C")
+            pdf.cell(col[2], line_height, str(data_child[1]), border=1, align="C")
             doanh_thu += data_child[2]
-            pdf.cell(col[3], line_height, data_child[2], border=1, align="C")
-            pdf.cell(col[4], line_height, data_child[3], border=1, align="C")
+            pdf.cell(col[3], line_height, str(data_child[2]), border=1, align="C")
+            pdf.cell(col[4], line_height, str(data_child[3]), border=1, align="C")
             pdf.ln(line_height)
 
     pdf.output(path.dirname(path.abspath(__file__)) +
-               url_for('static', filename='export/' + 'month_medicine_usage_' + str(year) + '/' + str(month) + '.pdf'))
+               url_for('static', filename='export/medicine_usage.pdf'))

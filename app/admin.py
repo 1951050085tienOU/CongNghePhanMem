@@ -129,22 +129,6 @@ class ManagerStatistics(ManagerView):
                            thuoc_da_dung=utils.thuoc_da_dung(), types=types, type=type)
 
 
-class ManagementMedicine(ModelAuthenticated):
-    can_view_details = True
-    can_delete = False
-    column_searchable_list = (Medicine.id, Medicine.name)
-    column_labels = {
-        'id': 'Mã',
-        'name': 'Tên',
-        'quantity': 'Số lượng',
-        'unit': 'Đơn vị tính',
-        'price': 'Đơn giá',
-        'out_of_date': 'Ngày hết hạn',
-        'producer': 'Nhà cung cấp',
-        'medicinetype': 'Loại thuốc'
-    }
-
-
 class ManageMedicine(ModelView):
     can_view_details = True
     can_edit = True
@@ -161,15 +145,50 @@ class ManageMedicine(ModelView):
         'type_name': 'Loại thuốc'
     }
 
-    '''def is_accessible(self):
-        if current_user.user_role.name == 'MANAGER':
+    def is_accessible(self):
+        if current_user.user_role.name == 'DOCTOR':
             return False
         return True
 
     def is_visible(self):
-        if current_user.user_role.name == 'MANAGER':
+        if current_user.user_role.name == 'DOCTOR':
             return False
-        return True'''
+        return True
+
+
+class ManageMedicine(ModelView):
+    can_view_details = True
+    can_edit = True
+    can_create = True
+    can_delete = True
+    column_labels = {
+        'name': 'Tên',
+        'quantity': 'Số lượng',
+        'unit': 'Đơn vị tính',
+        'price': 'Đơn giá',
+        'out_of_date': 'Ngày hết hạn',
+        'producer': 'Nhà cung cấp',
+        'medicinetype': 'Loại thuốc',
+        'type_name': 'Tên đơn vị'
+    }
+
+    def is_accessible(self):
+        if current_user.user_role.name == 'MANAGER':
+            return True
+        return False
+
+    def is_visible(self):
+        if current_user.user_role.name == 'MANAGER':
+            return True
+        return False
+
+
+class MedicineManage(ManageMedicine):
+    column_searchable_list = ['id', 'name']
+
+
+class MedicineTypeManage(ManageMedicine):
+    column_searchable_list = ['id', 'type_name']
 
 
 class Management(ManagerView):
@@ -313,8 +332,8 @@ admin.add_view(payment(name='Thanh toán'))
 
 
 #medicine quản lý
-admin.add_view(ManageMedicine(Medicine, db.session, category="Quản lý", name='Kho thuốc'))
-admin.add_view(ManageMedicine(MedicineType, db.session, category="Quản lý", name='Kho đơn vị'))
+admin.add_view(MedicineManage(Medicine, db.session, category="Quản lý", name='Kho thuốc'))
+admin.add_view(MedicineTypeManage(MedicineType, db.session, category="Quản lý", name='Kho đơn vị'))
 admin.add_sub_category(parent_name="Quản lý", name="ManageMedicine")
 admin.add_sub_category(name="Links", parent_name="Team")
 admin.add_view(ManagerRegulation(name='Quy định'))

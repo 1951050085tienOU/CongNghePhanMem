@@ -1,5 +1,8 @@
 import cloudinary.uploader
 import random
+
+import flask
+
 from app import CustomObject
 from app import app, db, login#, client
 from flask import render_template, url_for, request, redirect, jsonify
@@ -207,8 +210,8 @@ def new_orderCus():
             if not utils.check_customer_exist_on_date(schedules, phone_number):
                 if not utils.check_exist_order_at_date_time(schedules):
                     # commit to database
-                    utils. add_new_appoinment(first_name, last_name, birthday, phone_number, gender_id, appointment_date, note
-                                        , schedules)
+                    utils. add_new_appoinment(first_name, last_name, birthday, phone_number, gender_id, appointment_date,
+                                              note, schedules)
                     return redirect(url_for('new_order', notification_code='submitSuccess'))
                 else:
                     return redirect(url_for('new_order', notification_code='ExistOne'))
@@ -227,15 +230,17 @@ def pay():
     if current_user.is_authenticated:
         if request.method.__eq__("POST"):
             medical_id = request.form['medical-bill-id']
-            customer_id = utils.get_customer_sche_information(
-                utils.get_medical_bill_by_id(medical_id).customer_sche).customer_id
-            regulation = utils.get_last_reg()
+            if medical_id:
+                customer_id = utils.get_customer_sche_information(
+                    utils.get_medical_bill_by_id(medical_id).customer_sche).customer_id
+                regulation = utils.get_last_reg()
 
-            utils.add_new_receipt(regulation_id=regulation, medical_bill_id=medical_id,
-                                  customer_id=customer_id)
+                utils.add_new_receipt(regulation_id=regulation, medical_bill_id=medical_id,
+                                      customer_id=customer_id)
+                utils.pdf_create_receipt(medical_bill_id=medical_id)
+                return redirect('/admin/payment' + "?statusPayment=submitSuccess")
+    return redirect('/admin/payment' + "?statusPayment=falseCheckout")
 
-            utils.pdf_create_receipt(medical_bill_id=medical_id)
-    return redirect('/admin/payment/')
 
 
 @app.route('/api/check-receipt', methods=['get', 'post'])
@@ -244,7 +249,8 @@ def check_receipt_history():
         if request.method.__eq__("POST"):
             phone_check = request.form['phone-check']
             list_re = utils.get_receipt_history(phone_check)
-            return render_template('/admin/receipt_history.html', phone_check=phone_check, list_re=list_re)
+            if list_re:
+                return render_template('/admin/receipt_history.html', phone_check=phone_check, list_re=list_re)
     return render_template('/admin/receipt_history.html')
 
 
