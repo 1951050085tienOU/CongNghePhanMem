@@ -7,8 +7,10 @@ from sqlalchemy.orm import session, query
 from sqlalchemy import func, extract
 from app.models import *
 from flask_login import current_user
-from flask import session, request
+from flask import session, request, url_for
 import hashlib
+from fpdf import FPDF
+from os import path
 
 
 def check_password(username, password):          #kiểm tra mật khẩu, tài khoản trên database
@@ -714,3 +716,228 @@ def get_receipt_history(phone_number):
             list_re.append(new_obj)
     return list_re
 
+
+def pdf_create_receipt(medical_bill_id):
+    #data
+    customer = db.session.query(Customer, Schedule, CustomerSche).filter(CustomerSche.customer_id == Customer.id,
+                                                                         CustomerSche.id == MedicalBill.customer_sche,
+                                                                         MedicalBill.id == medical_bill_id,
+                                                                         Schedule.id == CustomerSche.schedule_id)\
+        .first()
+    this_customer_name = customer[0].first_name + ' ' + customer[0].last_name
+    this_schedule_time = str(customer[1].examination_date) + ' ' + str(customer[2].timer)
+
+    amount_money = format_currency_vi(get_total_price_in_receipt(medical_bill_id))
+    total = amount_money[0]
+    medical_price = amount_money[1]
+    medicine_price = amount_money[2]
+
+    data = [
+        "HÓA ĐƠN THANH TOÁN",
+        "Họ tên: ", "Ngày khám: ",
+        "Tiền khám ", "Tiền thuốc: ",
+        "Tổng tiền: "
+    ]
+
+    col = [47.5, 47.5, 47.5, 47.5]
+    # coding: utf8
+
+    pdf = FPDF(orientation='landscape', format='A5')
+    pdf.add_page()
+    pdf.add_font("Arial", "", "c:\\Windows\\fonts\\arial.ttf", uni=True)
+    pdf.set_font("Arial", size=13)
+    line_height = pdf.font_size * 2.5
+    pdf.cell(col[0] + col[1] + col[2] + col[3], line_height, data[0], ln=True, border=1, align="C")
+    pdf.cell(col[0] + col[1], line_height, data[1] + this_customer_name, border=1, align="L")
+    pdf.cell(col[2] + col[3], line_height, data[2] + this_schedule_time, border=1, align="L")
+    pdf.ln(line_height)
+    pdf.cell(col[0] + col[1], line_height, data[3] + medical_price, border=1, align="L")
+    pdf.cell(col[2] + col[3], line_height,  data[4] + medicine_price, border=1, align="L")
+    pdf.ln(line_height)
+    pdf.cell(col[0] + col[1] + col[2] + col[3], line_height, data[5] + total, border=1, align="L")
+    pdf.output(path.dirname(path.abspath(__file__)) +
+               url_for('static', filename='export/' + 'receipt_in_medical_' + medical_bill_id + '.pdf'))
+
+
+def pdf_create_examine_list_in_date(date_check):        #danh sách khám bệnh
+    if date_check is datetime:
+        date_check = date_check.date()
+    #data
+    data_list = []     #[ [hoten, gioitinh, namsinh, diachi] ,    ]
+
+
+    data = [
+        "DANH SÁCH KHÁM BỆNH",
+        "Ngày khám: ",
+        "STT: ", "Họ tên", "Giới tính", "Năm sinh", "Địa chỉ"
+    ]
+
+    col = [11.875, 71.25, 35.625, 35.625, 35.625]
+    # coding: utf8
+
+    pdf = FPDF(orientation='landscape', format='A5')
+    pdf.add_page()
+    pdf.add_font("Arial", "", "c:\\Windows\\fonts\\arial.ttf", uni=True)
+    pdf.set_font("Arial", size=13)
+    line_height = pdf.font_size * 2.5
+    pdf.cell(col[0] + col[1] + col[2] + col[3] + col[4], line_height, data[0], ln=True, border=1, align="C")
+    pdf.cell(col[0] + col[1] + col[2] + col[3] + col[4], line_height, data[1], ln=True, border=1, align="C")
+    pdf.cell(col[0], line_height, data[2], border=1, align="C")
+    pdf.cell(col[1], line_height, data[3], border=1, align="C")
+    pdf.cell(col[2], line_height, data[4], border=1, align="C")
+    pdf.cell(col[3], line_height, data[5], border=1, align="C")
+    pdf.cell(col[4], line_height, data[6], border=1, align="C")
+    pdf.ln(line_height)
+    count = 0
+    if data_list:
+        for customer in data_list:
+            count += 1
+            pdf.cell(col[0], line_height, str(count), border=1, align="C")
+            pdf.cell(col[1], line_height, customer[0], border=1, align="L")
+            pdf.cell(col[2], line_height, customer[1], border=1, align="C")
+            pdf.cell(col[3], line_height, customer[2], border=1, align="C")
+            pdf.cell(col[4], line_height, customer[3], border=1, align="L")
+            pdf.ln(line_height)
+
+    pdf.output(path.dirname(path.abspath(__file__)) +
+               url_for('static', filename='export/' + 'examine_list_' + str(date).replace('/', '_') + '.pdf'))
+
+
+def pdf_create_medical_bill(medical_bill_id):
+    medical_bill = get_medical_bill_by_id(medical_bill_id)
+    customer_sche = db.session.query(CustomerSche).filter(medical_bill.customer_sche == CustomerSche.id).first()
+    schedule = db.session.query(Schedule).filter(customer_sche.schedule_id == Schedule.id).first()
+    customer = db.session.query(Customer).filter(customer_sche.customer_id == Customer.id).first()
+
+    # [(thuốc, đơn vị, số lượng, cách dùng), (thuốc, đơn vị, số lượng, cách dùng), ...]
+    medicines = db.session.query(Medicine.name, Medicine.unit, MedicalBillDetail.quantity, MedicalBillDetail.how_to_use)\
+        .filter(MedicalBillDetail.medical_bill == medical_bill_id, MedicalBillDetail.medicine == Medicine.id).all()
+
+    this_customer_name = customer.first_name + " " + customer.last_name
+    this_customer_schedule = str(schedule.examination_date) + ' ' + str(customer_sche.timer)
+
+
+    data = [
+        "PHIẾU KHÁM BỆNH",
+        "Họ tên: ", "Ngày khám: ",
+        "Triệu chứng: ", "Dự đoán loại bệnh: "
+        "STT: ", "Thuốc", "Đơn vị", "Số lượng", "Cách dùng"
+    ]
+
+    col = [11.875, 71.25, 35.625, 35.625, 35.625]
+    # coding: utf8
+
+    pdf = FPDF(orientation='landscape', format='A5')
+    pdf.add_page()
+    pdf.add_font("Arial", "", "c:\\Windows\\fonts\\arial.ttf", uni=True)
+    pdf.set_font("Arial", size=13)
+    line_height = pdf.font_size * 2.5
+    pdf.cell(col[0] + col[1] + col[2] + col[3] + col[4], line_height, data[0], ln=True, border=1, align="C")
+    pdf.cell(95, line_height, data[1] + this_customer_name, border=1, align="L")
+    pdf.cell(95, line_height, data[2] + this_customer_schedule, border=1, align="L")
+    pdf.ln(line_height)
+    pdf.cell(95, line_height, data[3] + medical_bill.symptom, border=1, align="L")
+    pdf.cell(95, line_height, data[4] + medical_bill.diagnostic_disease, border=1, align="L")
+    pdf.ln(line_height)
+
+    count = 0
+    if medicines:
+        for medicine in medicines:
+            count += 1
+            pdf.cell(col[0], line_height, str(count), border=1, align="C")
+            pdf.cell(col[1], line_height, medicine[0], border=1, align="L")
+            pdf.cell(col[2], line_height, medicine[1], border=1, align="C")
+            pdf.cell(col[3], line_height, medicine[2], border=1, align="C")
+            pdf.cell(col[4], line_height, medicine[3], border=1, align="L")
+            pdf.ln(line_height)
+
+    pdf.output(path.dirname(path.abspath(__file__)) +
+               url_for('static', filename='export/' + 'medical_bil_' + medical_bill_id + '.pdf'))
+
+
+def pdf_month_revenue(year, month, data_list): # data_list = [('ngày', 'số bệnh nhân', 'int||float:Doanh thu', 'Tỷ lệ')]
+    data = [
+        "BÁO CÁO DOANH THU THEO THÁNG",
+        "Tháng: ",
+        "STT", "Ngày", "Số bệnh nhân", "Doanh thu", "Tỷ lệ",
+        "Tổng doanh thu: "
+    ]
+
+    col = [11.875, 71.25, 35.625, 35.625, 35.625]
+    # coding: utf8
+
+    pdf = FPDF(orientation='landscape', format='A5')
+    pdf.add_page()
+    pdf.add_font("Arial", "", "c:\\Windows\\fonts\\arial.ttf", uni=True)
+    pdf.set_font("Arial", size=13)
+    line_height = pdf.font_size * 2.5
+    pdf.cell(col[0] + col[1] + col[2] + col[3] + col[4], line_height, data[0], ln=True, border=1, align="C")
+    pdf.cell(col[0] + col[1] + col[2] + col[3] + col[4], line_height, data[1] + str(year) + '/' + str(month),
+             ln=True, border=1, align="C")
+    pdf.cell(col[0], line_height, data[2], border=1, align="C")
+    pdf.cell(col[1], line_height, data[3], border=1, align="C")
+    pdf.cell(col[2], line_height, data[4], border=1, align="C")
+    pdf.cell(col[3], line_height, data[5], border=1, align="C")
+    pdf.cell(col[4], line_height, data[6], border=1, align="C")
+    pdf.ln(line_height)
+
+    count = 0
+    doanh_thu = 0
+    if data_list:
+        for data_child in data_list:
+            count += 1
+            pdf.cell(col[0], line_height, str(count), border=1, align="C")
+            pdf.cell(col[1], line_height, data_child[0], border=1, align="C")
+            pdf.cell(col[2], line_height, data_child[1], border=1, align="C")
+            doanh_thu += data_child[2]
+            pdf.cell(col[3], line_height, data_child[2], border=1, align="C")
+            pdf.cell(col[4], line_height, data_child[3], border=1, align="C")
+            pdf.ln(line_height)
+
+    pdf.cell(col[0] + col[1] + col[2] + col[3] + col[4], line_height, data[7] + str(doanh_thu), ln=True, border=1,
+             align="L")
+    pdf.output(path.dirname(path.abspath(__file__)) +
+               url_for('static', filename='export/' + 'month_revenue_' + str(year) + '/' + str(month) + '.pdf'))
+
+
+def pdf_create_medicine_usage(year, month, data_list): #data_list = [(Thuoc, đơn vị tính, số lượng, số lần dùng), ...]
+    data = [
+        "BÁO CÁO SỬ DỤNG THUỐC",
+        "Tháng: ",
+        "STT", "Thuốc", "Đơn vị tính", "Số lượng", "Số lần dùng",
+        "Tổng doanh thu: "
+    ]
+
+    col = [11.875, 71.25, 35.625, 35.625, 35.625]
+    # coding: utf8
+
+    pdf = FPDF(orientation='landscape', format='A5')
+    pdf.add_page()
+    pdf.add_font("Arial", "", "c:\\Windows\\fonts\\arial.ttf", uni=True)
+    pdf.set_font("Arial", size=13)
+    line_height = pdf.font_size * 2.5
+    pdf.cell(col[0] + col[1] + col[2] + col[3] + col[4], line_height, data[0], ln=True, border=1, align="C")
+    pdf.cell(col[0] + col[1] + col[2] + col[3] + col[4], line_height, data[1] + str(year) + '/' + str(month),
+             ln=True, border=1, align="C")
+    pdf.cell(col[0], line_height, data[2], border=1, align="C")
+    pdf.cell(col[1], line_height, data[3], border=1, align="C")
+    pdf.cell(col[2], line_height, data[4], border=1, align="C")
+    pdf.cell(col[3], line_height, data[5], border=1, align="C")
+    pdf.cell(col[4], line_height, data[6], border=1, align="C")
+    pdf.ln(line_height)
+
+    count = 0
+    doanh_thu = 0
+    if data_list:
+        for data_child in data_list:
+            count += 1
+            pdf.cell(col[0], line_height, str(count), border=1, align="C")
+            pdf.cell(col[1], line_height, data_child[0], border=1, align="C")
+            pdf.cell(col[2], line_height, data_child[1], border=1, align="C")
+            doanh_thu += data_child[2]
+            pdf.cell(col[3], line_height, data_child[2], border=1, align="C")
+            pdf.cell(col[4], line_height, data_child[3], border=1, align="C")
+            pdf.ln(line_height)
+
+    pdf.output(path.dirname(path.abspath(__file__)) +
+               url_for('static', filename='export/' + 'month_medicine_usage_' + str(year) + '/' + str(month) + '.pdf'))

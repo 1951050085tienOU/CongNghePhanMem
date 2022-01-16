@@ -233,6 +233,8 @@ def pay():
 
             utils.add_new_receipt(regulation_id=regulation, medical_bill_id=medical_id,
                                   customer_id=customer_id)
+
+            utils.pdf_create_receipt(medical_bill_id=medical_id)
     return redirect('/admin/payment/')
 
 
