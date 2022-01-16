@@ -159,10 +159,12 @@ class ManagerStatistics(ManagerView):
             'text': 'Tròn'
         }]
         type = request.args.get('chart')
+        utils.pdf_create_medicine_usage(year, month, utils.revenue_stats(year, month, doanhthu))
+
         return self.render('admin/manager_statistics.html',
-                           revenue_stats=utils.revenue_stats(month=month, doanhthu=doanhthu),
-                           examination_stats=utils.examination_stats(month=month),
-                           medicine_stats=utils.medicine_stats(), thuoc_bo_sung=utils.thuoc_bo_sung(),
+                           revenue_stats=utils.revenue_stats(month=month, year=year, doanhthu=doanhthu),
+                           examination_stats=utils.examination_stats(month=month, year=year),
+                           medicine_stats=utils.medicine_stats(month=month, year=year), thuoc_bo_sung=utils.thuoc_bo_sung(),
                            thuoc_het_sl=utils.thuoc_het_sl(), thuoc_ton_kho=utils.thuoc_ton_kho(),
                            thuoc_da_dung=utils.thuoc_da_dung(), types=types, type=type, now=now,
                            month=month, year=year)
