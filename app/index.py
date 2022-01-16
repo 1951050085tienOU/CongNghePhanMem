@@ -198,6 +198,7 @@ def new_order_from_client():
 @app.route("/add-new-appoinment", methods=['get', 'post'])
 def new_orderCus():
     if current_user.is_authenticated:
+        err_msg = ''
         if request.method.__eq__('POST'):
             first_name = request.form.get('customer-fname')
             last_name = request.form.get('customer-lname')
@@ -207,17 +208,19 @@ def new_orderCus():
             appointment_date = request.form.get('order-date')
             note = str(request.form.get('customer-note'))
             schedules = utils.rounded_time(datetime.strptime(request.form.get('order-date'), '%Y-%m-%dT%H:%M'))
-            if not utils.check_customer_exist_on_date(schedules, phone_number):
+            print(phone_number)
+            print(schedules)
+            if not utils.check_customer_exist_on_date(schedules.date(), phone_number):
                 if not utils.check_exist_order_at_date_time(schedules):
                     # commit to database
-                    utils. add_new_appoinment(first_name, last_name, birthday, phone_number, gender_id, appointment_date,
-                                              note, schedules)
-                    return redirect(url_for('new_order', notification_code='submitSuccess'))
+                    utils.add_new_order(first_name, last_name, birthday, phone_number, gender_id, appointment_date, note
+                                        , schedules)
+                    return redirect(url_for('new_order', err_msg='Đơn hẹn đã được đặt thành công'))
                 else:
-                    return redirect(url_for('new_order', notification_code='ExistOne'))
+                    return redirect(url_for('new_order', err_msg='Thời gian hẹn của khách hàng bị trùng lịch hẹn. Vui lòng đăng ký hẹn thời điểm khác.'))
             else:
-                return redirect(url_for('new_order', notification_code='justOneADay'))
-        return redirect(url_for('index', notification_code='RequestLogin'))
+                return redirect(url_for('new_order', err_msg='Đơn hẹn ngày hôm nay của khách hàng đã được đặt. Trùng lịch hẹn.'))
+        return redirect(url_for('new_order', err_msg=''))
 
 
 @app.route("/new_order", methods=['get, post'])
@@ -251,6 +254,34 @@ def check_receipt_history():
             if list_re:
                 return render_template('/admin/receipt_history.html', phone_check=phone_check, list_re=list_re)
     return render_template('/admin/receipt_history.html')
+
+
+@app.route('/admin/appoinments/confirm-customersche', methods=['put'])
+def confirm_customer_sche():
+    data = request.json
+    id = data.get('id')
+
+    timer = Customer.query.get(id).appointment_date.time()
+    schedule = utils.get_schedule_by_date(datetime.now().date())
+    if not schedule:
+        schedule = utils.add_schedule(datetime.now().date())
+    try:
+        utils.add_customer_sche(id, schedule.id, timer)
+    except:
+        return {'status': 404}
+
+    return {'status': 201, 'id':id}
+
+@app.route('/admin/appoinments/cancel-customersche', methods=['put'])
+def cancel_customer_sche():
+    data = request.json
+    id = data.get('id')
+    try:
+        utils.cancel_customersche(id)
+    except:
+        return {'status': 404}
+
+    return {'status': 201, 'id':id}
 
 
 @app.route("/admin/createmedicalbill/load-patient", methods=['post'])

@@ -135,22 +135,24 @@ def medine_stock_percent_over_5():             #lấy danh sách phần trăm th
     return list_off
 
 
-def examination_stats(month):
+def examination_stats(month, year):
     p = db.session.query(extract('day', Schedule.examination_date), func.count(CustomerSche.customer_id))\
                         .join(Customer, CustomerSche.customer_id.__eq__(Customer.id))\
                         .join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
-                        .filter(CustomerSche.examined == True)\
-                        .filter(extract('month', Schedule.examination_date) == month)\
+                        .filter(CustomerSche.examined == True, extract('month', Schedule.examination_date) == month,
+                                extract('year', Schedule.examination_date) == year)\
                         .group_by(extract('day', Schedule.examination_date))\
                         .order_by(extract('day', Schedule.examination_date))
     return p.all()
 
 
-def medicine_stats():
-    return db.session.query(Medicine.name, Medicine.quantity)\
-                        .filter(Medicine.quantity>0)\
-                        .group_by(Medicine.name).all()
-
+def medicine_stats(month,year):
+    return Medicine.query.join(MedicalBillDetail, MedicalBillDetail.medicine.__eq__(Medicine.id))\
+        .join(MedicalBill, MedicalBillDetail.medical_bill.__eq__(MedicalBill.id))\
+        .join(Receipt, Receipt.medical_bill.__eq__(MedicalBill.id))\
+        .filter(extract('month', Receipt.created_date) == month, extract('year', Receipt.created_date) == year)\
+        .add_columns(func.sum(MedicalBillDetail.quantity)).add_columns(func.count(MedicalBillDetail.medicine))\
+        .order_by(Medicine.id).group_by(Medicine.id).all()
 
 def medicine_fill():
     return Medicine.query.filter(Medicine.quantity>0, Medicine.quantity<10).all()
@@ -548,18 +550,6 @@ def load_sche(name=None, phone=None, address=None):
     if address:
         customer = customer.filter(Customer.address_id(address))
     return customer.all()
-
-
-#danh sách khách đã được xác nhận lịch hẹn-y tá
-def list_cus_was_sche(date):
-    return Customer.query.join(Schedule, Customer.id.__eq__(Schedule.id)) \
-                       .filter(extract('day', Schedule.examination_date) == date, Customer.was_scheduled == True).all()
-
-
-#danh sách khách chưa được xác nhận lịch hẹn-y tá
-def list_cus_wasnt_axam(date):
-    return Customer.query.join(CustomerSche, Customer.id.__eq__(CustomerSche.customer_id)) \
-                       .filter(CustomerSche.examined == False, Customer.was_scheduled == False).all()
 
 
 #Tạo lịch hẹn mới trên gd y tá
@@ -993,3 +983,53 @@ def update_customersche(id):
 def get_customersche(customer_id, date):
     return CustomerSche.query.join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
         .filter(Schedule.examination_date == date, CustomerSche.customer_id.__eq__(customer_id)).first()
+
+
+#danh sách khách đã được xác nhận lịch hẹn-y tá
+def list_cus_was_sche(date):
+    return Customer.query.join(Schedule, Customer.id.__eq__(Schedule.id)) \
+                       .filter(extract('day', Schedule.examination_date) == date, Customer.was_scheduled == True).all()
+
+
+#danh sách khách chưa được xác nhận lịch hẹn-y tá
+def list_cus_wasnt_axam(date):
+    return Customer.query.filter(extract('year', Customer.appointment_date) == date.year,
+                extract('month', Customer.appointment_date) == date.month,
+                extract('day', Customer.appointment_date) == date.day, Customer.was_scheduled == False).all()
+
+#tìm khách hàng chưa dc xác nhận lịch hẹn
+def search_customer_not_sche(date, phone_number):
+    return Customer.query.join(CustomerSche, CustomerSche.customer_id.__eq__(Customer.id))\
+        .filter(Customer.phone_number.__eq__(phone_number), Customer.was_scheduled == False,
+                extract('year', Customer.appointment_date) == date.year,
+                extract('month', Customer.appointment_date) == date.month,
+                extract('day', Customer.appointment_date) == date.day).first()
+
+
+def confirm_sche():
+    confirm = Customer.was_scheduled('True')
+    db.session.add(confirm)
+    db.session.commit()
+
+
+def add_customer_sche(customer_id,schedule_id, timer):
+    c = CustomerSche(customer_id=customer_id, schedule_id=schedule_id, timer=timer)
+    db.session.add(c)
+    Customer.query.get(customer_id).was_scheduled=True
+    db.session.commit()
+    return c
+
+def get_schedule_by_date(date):
+    return Schedule.query.filter(Schedule.examination_date.__eq__(date)).first()
+
+def add_schedule(date):
+    s = Schedule(examination_date=date)
+    db.session.add(s)
+    db.session.commit()
+    return s
+
+def cancel_customersche(id):
+    date = Customer.query.get(id).appointment_date
+    Customer.query.get(id).appointment_date = datetime(date.year,date.month, date.day+1, 0)
+    db.session.commit()
+    return Customer.query.get(id)
