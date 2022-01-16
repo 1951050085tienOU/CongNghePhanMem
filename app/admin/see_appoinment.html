@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.0/css/all.css" integrity="sha384-lZN37f5QGtY3VHgisS14W3ExzMWZxybE1SJSEsQp9S+oqd12jhcu+A56Ebc1zFSJ" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <title>Xem lịch hẹn</title>
+</head>
+<body>
+    <h4 style="text-align: center"  >Xác nhận lịch hẹn</h4>
+    <form class="form-inline col-md-12" action ="/see_appoinment" method="post">
+        <div class="col-md-6 row">
+            <label for="customer_name">Tên khách hàng:</label>
+            <input style="margin:15px; width: 338px" name="customer_name" type="text" class="form-control" placeholder="Nhập tên khách hàng" id="customer_name">
+        </div>
+        <div class="col-md-5 row">
+            <label for="phoneNumber">Số điện thoại:</label>
+            <input style="margin:15px; width: 284px" name="phoneNumber" type="text" class="form-control" placeholder="Nhập số điện thoại" id="phoneNumber">
+        </div>
+        <div class="col-md-1">
+            <button style="margin-left:35px" type="submit" class="btn btn-primary right"><i class="fa fa-search"></i></button>
+        </div>
+    </form>
+    <div class="container col-md-12 ">
+        <div style="padding-right: 20px" class="table-wrapper-scroll-y my-custom-scrollbar">
+          <table  class="table table-striped table-bordered table-sm" cellspacing="0" width="100%">
+            <thead >
+              <tr>
+                <th scope="col" class="text-center">Tên</th>
+                <th scope="col" class="text-center th-sm">Tuổi</th>
+                <th scope="col" class="text-center">Số điện thoại</th>
+                <th scope="col" class="text-center">Địa chỉ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if search_customer %}
+                  <tr >
+                    <th scope="row" >{{ search_customer.first_name +" "+ search_customer.last_name }}</th>
+                    <td >{{ now.year - search_customer.birthday.year }} </td>
+                    <td >{{ search_customer.phone_number }}</td>
+                    <td >{{ search_customer.address_id }}</td>
+                  </tr>
+              {% else%}
+                {% for p in cus %}
+                      <tr class="text-center">
+                        <td >{{ p.first_name +" "+ p.last_name }}</td>
+                        <td>{{ now.year - p.birthday.year }}</td>
+                        <td>{{ p.phone_number }}</td>
+                        <td>{{ p.address_id}}</td>
+                      </tr>
+                  {% endfor %}
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+    </div>
+{% endblock %}
