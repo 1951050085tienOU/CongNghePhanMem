@@ -944,3 +944,52 @@ def pdf_create_medicine_usage(year, month, data_list): #data_list = [(Thuoc, Ä‘Æ
 
     pdf.output(path.dirname(path.abspath(__file__)) +
                url_for('static', filename='export/medicine_usage.pdf'))
+
+def tim_khach_hang(sdt, **kwargs):
+    return Customer.query.filter(Customer.phone_number.__eq__(sdt)).first()
+
+def lich_su_kham(customer_id, medical_id=None):
+    if medical_id:
+        return MedicalBill.query.join(CustomerSche, MedicalBill.customer_sche.__eq__(CustomerSche.id)).\
+        join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id)).add_columns(Schedule.examination_date)\
+        .join(Customer, CustomerSche.customer_id.__eq__(Customer.id))\
+        .filter(MedicalBill.id.__eq__(medical_id)).add_columns(Customer.first_name)\
+        .add_columns(Customer.last_name).add_columns(extract('year', Customer.birthday)).all()
+    else:
+        return MedicalBill.query.join(CustomerSche, MedicalBill.customer_sche.__eq__(CustomerSche.id)).\
+            join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id)).add_columns(Schedule.examination_date)\
+            .join(Customer, CustomerSche.customer_id.__eq__(Customer.id))\
+            .filter(CustomerSche.customer_id.__eq__(customer_id)).add_columns(Customer.first_name)\
+            .add_columns(Customer.last_name).add_columns(extract('year', Customer.birthday)).group_by(MedicalBill.id)\
+            .order_by(MedicalBill.id).all()
+
+
+def get_medicine_by_name(name):
+    return Medicine.query.filter(Medicine.name.__eq__(name)).first()
+
+
+def add_medical_bill(cs, medicalinfo, medicinebilldetails):
+    medicalbill = MedicalBill(user=current_user, symptom=medicalinfo['trieuchung'],
+                              diagnostic_disease=medicalinfo['benhchuandoan'], customer_sche=cs.id)
+    db.session.add(medicalbill)
+    db.session.commit()
+    for m in medicinebilldetails:
+        m = MedicalBillDetail(medicalbill=medicalbill, medicine=m['id'], quantity=m['quantity'],
+                              how_to_use=m['how_to_use'], unit_price=m['quantity']*(Medicine.query.get(m['id']).price))
+        db.session.add(m)
+    db.session.commit()
+    return update_customersche(medicalbill.id)
+
+
+def update_customersche(id):
+    c = CustomerSche.query.join(MedicalBill, MedicalBill.customer_sche.__eq__(CustomerSche.id)) \
+        .filter(MedicalBill.id.__eq__(id)).first()
+    c.examined = True
+    db.session.add(c)
+    db.session.commit()
+    return c
+
+
+def get_customersche(customer_id, date):
+    return CustomerSche.query.join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+        .filter(Schedule.examination_date == date, CustomerSche.customer_id.__eq__(customer_id)).first()

@@ -242,7 +242,6 @@ def pay():
     return redirect('/admin/payment' + "?statusPayment=falseCheckout")
 
 
-
 @app.route('/api/check-receipt', methods=['get', 'post'])
 def check_receipt_history():
     if current_user.is_authenticated:
@@ -252,6 +251,163 @@ def check_receipt_history():
             if list_re:
                 return render_template('/admin/receipt_history.html', phone_check=phone_check, list_re=list_re)
     return render_template('/admin/receipt_history.html')
+
+
+@app.route("/admin/createmedicalbill/load-patient", methods=['post'])
+def load_patient():
+    data = request.json
+    sdt = data.get('sdt')
+    phieukham = data.get('phieukham')
+    try:
+        p = utils.tim_khach_hang(sdt=sdt)
+    except:
+        return {'status': 404, 'err_msg' :'Lỗi hệ thống'}
+
+    if p:
+        if str(p.gender_id).__eq__('Gender.NU'):
+            gender = 'Nữ'
+        else:
+            if str(p.gender_id).__eq__('Gender.NAM'):
+                gender = 'Nam'
+            else:
+                gender = 'Khác'
+
+    return {'status': 201, 'patient': {
+        'id': p.id,
+        'first_name': p.first_name,
+        'last_name': p.last_name,
+        'age': datetime.now().year - p.birthday.year,
+        'gender': gender,
+        'phone_number': p.phone_number,
+    }, 'phieukham': phieukham}
+
+
+@app.route('/admin/createmedicalbill/add-medicine', methods=['post'])
+def add_medicine_to_medical_bill():
+    data = request.json
+    medicine_name = data.get('medicine_name')
+    medicine = session.get('medicine')
+    try:
+        m = utils.get_medicine_by_name(name=medicine_name)
+    except:
+        return {'status': 404, 'err_msg': 'Lỗi hệ thống !!'}
+
+    if not medicine:
+        medicine = {}
+
+    if m.id in medicine:
+        medicine[m.id]['quantity'] = medicine[m.id]['quantity']+1
+    else:
+        medicine[m.id] = {
+            'id': m.id,
+            'name': m.name,
+            'quantity': 1,
+            'how_to_use': '',
+            'price': m.price
+        }
+
+    session['medicine'] = medicine
+
+    return {'status': 201, 'medicine': medicine[m.id]}
+
+
+@app.route('/admin/createmedicalbill/delete-medicinebill-details', methods=['post'])
+def del_medicinebill_details():
+    try:
+        del session['medicine']
+    except:
+        return jsonify({'code': 400})
+
+    return jsonify({'code': 200})
+
+
+@app.route('/admin/createmedicalbill/update/quantity', methods=['put'])
+def update_medicine_quantity():
+    data = request.json
+    id = data.get('id')
+    quantity = data.get('quantity')
+    medicine = session.get('medicine')
+    if medicine and id in medicine:
+        medicine[id]['quantity'] = quantity
+        session['medicine'] = medicine
+
+    return {'status': 201}
+
+
+@app.route('/admin/createmedicalbill/update/how-to_use', methods=['put'])
+def update_how_to_use():
+    data = request.json
+    id = data.get('id')
+    how_to_use = data.get('how_to_use')
+    medicine = session.get('medicine')
+    if medicine and id in medicine:
+        medicine[id]['how_to_use'] = how_to_use
+        session['medicine'] = medicine
+        return {'status': 201}
+
+    return {'status': 404}
+
+
+@app.route('/admin/createmedicalbill/delete-medicine', methods=['put'])
+def delete_medicine():
+    data = request.json
+    id = data.get('id')
+    medicine = session.get('medicine')
+    if medicine and id in medicine:
+        del medicine[id]
+        session['medicine'] = medicine
+    else:
+        return {'status': 404}
+
+    return {'status': 201, 'medicine': medicine}
+
+
+@app.route('/admin/createmedicalbill/create-medicalbill', methods=['post'])
+def create_medical_bill():
+    data = request.json
+    try:
+        medical_bill = session.get('medical_bill')
+        medical_bill = {
+            'ten': data.get('ten'),
+            'sdt': data.get('sdt'),
+            'tuoi': data.get('tuoi'),
+            'gioitinh': data.get('gioitinh'),
+            'phieukham': data.get('phieukham'),
+            'trieuchung': data.get('trieuchung'),
+            'benhchuandoan': data.get('benhchuandoan')
+        }
+        session['medical_bill'] = medical_bill
+    except:
+        return {'status': 404, 'err_msg': 'Lỗi hệ thống'}
+
+    return {'status': 201, 'medical_bill': medical_bill}
+
+
+@app.route('/admin/createmedicalbill/', methods=['post'])
+def add_new_medicalbill():
+    if request.method.__eq__('POST'):
+        medicine = session.get('medicine')
+        medical_bill = session.get('medical_bill')
+        try:
+            customer = utils.get_customer_by_phone(medical_bill['sdt'])
+            customersche = utils.get_customersche(customer_id=customer.id, date=date.today())
+            utils.add_medical_bill(cs=customersche, medicalinfo=medical_bill, medicinebilldetails=medicine)
+        except:
+            del session['medicine']
+            del session['medical_bill']
+            medicine = session.get('medicine')
+            medical_bill = session.get('medical_bill')
+            return jsonify({'code': 400, 'medicine': medicine, 'medical_bill': medical_bill})
+
+        return jsonify({'code': 201, 'medicine': medicine, 'medical_bill': medical_bill})
+
+
+@app.context_processor
+def common_response():
+    return {
+        'medicine': session.get('medicine'),
+        'medical_bill': session.get('medical_bill')
+    }
 
 
 if __name__ == '__main__':

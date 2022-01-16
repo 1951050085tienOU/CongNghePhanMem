@@ -1,4 +1,5 @@
 import datetime
+from datetime import date
 import hashlib
 from datetime import datetime, timedelta
 from app import app, utils, db
@@ -10,6 +11,8 @@ from flask_login import current_user
 from app.models import UserRole, Gender
 from flask import request, session, url_for, redirect
 from flask_login import logout_user
+from sqlalchemy.sql import extract
+from app.models import *
 
 
 class ModelAuthenticated(BaseView):
@@ -46,6 +49,7 @@ class NurseView(BaseView):
 class General(AdminIndexView, ModelAuthenticated):
     @expose('/')
     def index(self):
+        userrole = utils.KiemTraRole(current_user)
         us = utils.get_user_information()
         #thống kê doanh thu tổng quát
         revenue_statistics = [] #danh sách chứa dữ liệu thống kê
@@ -96,19 +100,53 @@ class General(AdminIndexView, ModelAuthenticated):
 
         if next_order_number == len(orders_list) + 1:
             next_order_number = ''
+
+        """Tổng quan của bác sĩ"""
+        now = date.today()
+        utils.update_customersche(MedicalBill.query.all()[-1].id)
+        # Bệnh nhân hiện tại
+        customer_now = utils.BenhNhanHienTai(now)
+
+        # Lịch hẹn ngày
+        customers_today = utils.LichHenNgay(now)
+
+        # Thống Kê bệnh nhân
+        patient_stats = utils.ThongKeBenhNhan(now)
+
+        # Danh sách Bệnh nhân
+        patient_list = utils.DanhSachBenhNhan(now)
+        # Tra cứu
+        # search_customer = utils.load_customers(request.args.get('customer_name'), request.args.get('phoneNumber'))
+        if request.args.__eq__('GET'):
+            customer = utils.tim_khach_hang(sdt=request.args.get('phoneNumber'))
+
+        customer = customer_now
+        if customer:
+            search_customer = utils.lich_su_kham(customer.id)
+        else:
+            search_customer = None
+            # search_customer = MedicalBill.query.join(CustomerSche, MedicalBill.customer_sche.__eq__(CustomerSche.id))\
+            #     .join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id)).join(Customer, CustomerSche.customer_id.__eq__(Customer.id))\
+            #     .add_column(Schedule.examination_date).add_columns(Customer.first_name)\
+            #     .add_columns(Customer.last_name).add_columns(extract('year', Customer.birthday)).group_by(MedicalBill.id)\
+            #     .order_by(MedicalBill.id).all()
+
         return self.render('admin/general.html', revenue_statistics=revenue_statistics, list_of_months=pre_months,
                            medicine_statistics_name=medicine_name, medicine_statistics_percent=medicine_percent,
                            max_customer=max_customer, medical_fee=medical_fee, ordered_today=ordered_today,
                            ordered_tomorrow=ordered_tomorrow, us=us, current_user=current_user,
                            search_customer=search_customer, list_was_examination=list_was_examination, now=now, cus=cus,
                            next_order_time=the_next_order, next_order_info=next_order_customer,
-                           next_order_number=next_order_number)
+                           next_order_number=next_order_number, userrole=userrole, customer_now=customer_now,
+                           customers_today=customers_today, patient_stats=patient_stats, patient_list=patient_list)
 
 
 class ManagerStatistics(ManagerView):
     @expose('/')
     def __index__(self):
+        now = datetime.now()
         month = request.args.get('month', datetime.now().month)
+        year = request.args.get('year', now.year)
         doanhthu = request.args.get('doanhthu', 5000000)
         types = [{
             'value': 'line',
@@ -126,7 +164,8 @@ class ManagerStatistics(ManagerView):
                            examination_stats=utils.examination_stats(month=month),
                            medicine_stats=utils.medicine_stats(), thuoc_bo_sung=utils.thuoc_bo_sung(),
                            thuoc_het_sl=utils.thuoc_het_sl(), thuoc_ton_kho=utils.thuoc_ton_kho(),
-                           thuoc_da_dung=utils.thuoc_da_dung(), types=types, type=type)
+                           thuoc_da_dung=utils.thuoc_da_dung(), types=types, type=type, now=now,
+                           month=month, year=year)
 
 
 class ManageMedicine(ModelView):
@@ -273,8 +312,12 @@ class LogOutUser(BaseView):
 class CreateMedicalBill(DoctorView):
     @expose('/')
     def __index__(self):
+        maphieu = MedicalBill.query.all()[-1].id
+        symptom_available = MedicalBill.query.all()
+        medical_name = Medicine.query.all()
 
-        return self.render('admin/doctor_medicalBill.html')
+        return self.render('admin/doctor_medicalBill.html',  symptom_available=symptom_available,
+                           medical_name=medical_name, maphieumoi=maphieu+1)
 
 
 class SeeMedicalRecord(DoctorView):
@@ -282,7 +325,14 @@ class SeeMedicalRecord(DoctorView):
     def __index__(self):
         # Tra cứu
         now = datetime.now()
-        search_customers = utils.load_customers(request.args.get('customer_name'), request.args.get('maPhieuKham'), request.args.get('phoneNumber'))
+        customer = utils.tim_khach_hang(request.args.get('phone_number'))
+        medical_id = request.args.get('medical-id', None)
+
+        if customer:
+            # search_customers = utils.load_customers(request.args.get('customer_name'), request.args.get('maPhieuKham'), request.args.get('phoneNumber'))
+            search_customers = utils.lich_su_kham(customer_id=customer.id, medical_id=medical_id)
+        else:
+            search_customers = None
 
         return self.render('admin/doctor_medicalRecord.html', search_customers=search_customers, now=now)
 
@@ -330,6 +380,9 @@ admin.add_view(ManagerStatistics(name='Thống kê'))
 admin.add_view(appoinments(name='Đặt hẹn'))
 admin.add_view(payment(name='Thanh toán'))
 
+#Doctor View
+admin.add_view(CreateMedicalBill(name='Lập phiếu'))
+admin.add_view(SeeMedicalRecord(name='Xem phiếu khám'))
 
 #medicine quản lý
 admin.add_view(MedicineManage(Medicine, db.session, category="Quản lý", name='Kho thuốc'))
