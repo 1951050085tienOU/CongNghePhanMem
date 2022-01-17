@@ -109,7 +109,6 @@
                               <!-- Modal footer -->
                               <div class="modal-footer">
                                 <button type="button" class="btn btn-danger" data-dismiss="modal">Thoát</button>
-                                <button type="button" class="btn btn-success" onclick="exportHTML(document.getElementById('source-html-examination'));" data-dismiss="modal">In báo cáo</button>
                               </div>
 
                             </div>
@@ -177,7 +176,8 @@
                                   <!-- Modal footer -->
                                   <div class="modal-footer">
                                     <button type="button" class="btn btn-danger" data-dismiss="modal">Thoát</button>
-                                    <button type="button" class="btn btn-success" onclick="exportHTML(document.getElementById('source-html-medicine'));" data-dismiss="modal">In báo cáo</button>
+                                    <button type="button" class="btn btn-success"  onclick="window.location.replace('{{ url_for('static', filename='export/medicine_usage.pdf')
+                         }}')" data-dismiss="modal">In báo cáo</button>
                                   </div>
 
                                 </div>

@@ -2,7 +2,7 @@ import cloudinary.uploader
 import random
 import flask
 from app import CustomObject
-from app import app, db, login, client, keys
+from app import app, db, login#, client, keys
 from flask import render_template, url_for, request, redirect, jsonify
 from flask_login import login_user, logout_user, current_user, login_required
 

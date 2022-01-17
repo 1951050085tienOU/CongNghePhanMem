@@ -152,6 +152,7 @@ class ManagerStatistics(ManagerView):
         type = request.args.get('chart')
         revenue_stats = utils.revenue_stats(month=month, year=year, doanhthu=doanhthu)
         utils.pdf_month_revenue(year, month, revenue_stats)
+        utils.pdf_create_medicine_usage(year, month, utils.get_medicine_usage_in_month(year, month))
         return self.render('admin/manager_statistics.html',
                            revenue_stats=utils.revenue_stats(month=month, year=year, doanhthu=doanhthu),
                            examination_stats=utils.examination_stats(month=month, year=year),

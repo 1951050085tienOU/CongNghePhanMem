@@ -1,6 +1,6 @@
 import math
 from datetime import datetime, timedelta
-from app import app, db, CustomObject, client, keys
+from app import app, db, CustomObject#, client, keys
 from sqlalchemy.sql import func
 from sqlalchemy import orm
 from sqlalchemy.orm import session, query
@@ -92,13 +92,13 @@ def reformat_0_phone_number(phone_number):
         return 0
 
 
-def send_messages(to_phone, content):
+'''def send_messages(to_phone, content):
     to_phone = reformat_phone_number(to_phone)
     if to_phone != '' and content !='':
         message = client.messages.create(
             body=content,
             from_=keys['twilio_number'],
-            to=to_phone)
+            to=to_phone)'''
 
 
 def get_customer_by_phone(phone_number):
@@ -1015,6 +1015,17 @@ def pdf_month_revenue(year, month, data_list): # data_list = [('ngày', 'số b�
              align="L")
     pdf.output(path.dirname(path.abspath(__file__)) +
                url_for('static', filename='export/revenue_statistics.pdf'))
+
+
+def get_medicine_usage_in_month(year, month):
+    return db.session.query(Medicine.name, Medicine.unit, func.sum(MedicalBillDetail.quantity), func.count(
+        MedicalBillDetail.medical_bill)).filter(Medicine.id == MedicalBillDetail.medicine,
+                                                 MedicalBillDetail.medical_bill == MedicalBill.id,
+                                                 MedicalBill.customer_sche == CustomerSche.id,
+                                                 CustomerSche.schedule_id == Schedule.id,
+                                                 extract('month', Schedule.examination_date) == month,
+                                                 extract('year', Schedule.examination_date) == year)\
+        .group_by(MedicalBillDetail.medicine).all()
 
 
 def pdf_create_medicine_usage(year, month, data_list): #data_list = [(Thuoc, đơn vị tính, số lượng, số lần dùng), ...]
