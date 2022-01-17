@@ -660,6 +660,11 @@ def search_customer_not_sche(date, phone_number):
 
 def confirm_sche():
     confirm = Customer.was_scheduled('True')
+    cus_sche = db.session.query(CustomerSche).filter(CustomerSche.customer_id == Customer.id).first()
+    sche = str((get_schedule_information(cus_sche.schedule_id)).examination_date)
+    timer = str(cus_sche.timer)
+    #############send_messages(Customer.phone_number, "Lịch đặt hẹn khám của quý khách đã được xác nhận. Quý khách xin vui
+    #lòng đến khám vào lúc " + sche + ' ' + timer)
     db.session.add(confirm)
     db.session.commit()
 
@@ -1074,24 +1079,4 @@ def pdf_create_medicine_usage(year, month, data_list): #data_list = [(Thuoc, đ�
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+##############new #########################
