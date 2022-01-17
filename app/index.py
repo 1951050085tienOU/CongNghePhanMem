@@ -1,14 +1,24 @@
 import cloudinary.uploader
 import random
-
 import flask
-
 from app import CustomObject
-from app import app, db, login#, client
+from app import app, db, login, client, keys
 from flask import render_template, url_for, request, redirect, jsonify
 from flask_login import login_user, logout_user, current_user, login_required
 
 
+######### load dùng user chung cả client và nhân viên ############
+@login.user_loader
+def user_load(user_id):
+    user = utils.get_user_by_id(user_id=user_id)
+    try:
+        user_role = user.user_role
+        return user
+    except:
+        return utils.get_customer_by_id(customer_id=user_id)
+
+
+########## TRANG INDEX CLIENT ##############
 @app.route('/')
 def index():
     notification_code = request.args.get('notification_code')
@@ -23,15 +33,92 @@ def index():
         return render_template('index.html', customers_list=customers_list, notif=notification_code)
 
 
-@login.user_loader
-def user_load(user_id):
-    user = utils.get_user_by_id(user_id=user_id)
-    if user.user_role:
-        return user
-    else:
-        return utils.get_customer_by_id(customer_id=user_id)
+@app.route('/api/login', methods=['POST'])
+def customer_login():
+    if request.method.__eq__('POST'):
+        otp_code = session.pop('response', None)
+        otp = str(request.form.get('otp_code'))
+        if otp == otp_code:
+            #get customer
+            customer = utils.get_accepted_customer_by_phone(request.form['customerPhoneNumber'])
+            if customer:
+                login_user(user=customer)
+                return redirect(url_for('index'))
+            else:
+                return redirect(url_for('index', notification_code='noSuccessReceipt'))
+    return render_template('index.html', current_phone=request.form['customerPhoneNumber'], error_code="Mã xác thực không hợp lệ.")
 
 
+@app.route("/api/otp-auth", methods=['POST'])
+def otp_auth():
+    if request.method.__eq__('POST'):
+        otp_code = random.randrange(100000, 999999)
+        if request.json:
+            phone_number = request.json['phoneNumber']
+            session.modified = True
+            session['response'] = str(otp_code)
+            print("======================== OTP la " + str(otp_code))
+            ###########Enable this line to send OTP for customer validation########################
+            message = utils.send_messages(phone_number, '[Phòng mạch Hồng Hiền Vy Tiến] Mã số xác thực của bạn là: ' + str(otp_code)
+                                              + '. Xin vui lòng không chia sẻ mã số này cho ai khác kể cả nhân viên của phòng mạch.')
+    return 'OK'
+
+
+@app.route("/api/otp-auth-again", methods=['POST'])
+def otp_auth_again():
+    if request.method.__eq__('POST'):
+        otp_code = random.randrange(100000, 999999)
+        if request.json:
+            utils.session_clear('response')
+            session.modified = True
+            session['response'] = str(otp_code)
+            print("======================== AGAIN OTP la " + str(otp_code))
+            phone_number = request.json['phoneNumber']
+            ###########Enable this line to send OTP for again customer validation########################
+            message = utils.send_messages(phone_number, '[Phòng mạch Hồng Hiền Vy Tiến] Mã số xác thực của bạn là: ' + str(otp_code)
+                                              + '. Xin vui lòng không chia sẻ mã số này cho ai khác kể cả nhân viên của phòng mạch.')
+    return 'OK'
+
+
+@app.route("/api/add-new-order", methods=['get', 'post'])
+@login_required
+def new_order_from_client():
+    if current_user.is_authenticated:
+        if request.method.__eq__('POST'):
+            first_name = current_user.first_name
+            last_name = current_user.last_name
+            birthday = current_user.birthday
+            gender_id = current_user.gender_id
+            phone_number = current_user.phone_number
+            appointment_date = datetime.now()
+            #New data
+            note = str(request.form.get('customer-note'))
+            schedules = utils.rounded_time(datetime.strptime(request.form.get('order-date'), '%Y-%m-%dT%H:%M'))
+            print(phone_number)
+            print(schedules)
+            if not utils.check_customer_exist_on_date(schedules.date(), phone_number):
+                if not utils.check_exist_order_at_date_time(schedules):
+                    #commit to database
+                    utils.add_new_order(first_name, last_name, birthday, phone_number, gender_id, appointment_date, note
+                                        , schedules)
+                    return redirect(url_for('index', notification_code='submitSuccess'))
+                else:
+                    return redirect(url_for('index', notification_code='ExistOne'))
+            else:
+                return redirect(url_for('index', notification_code='justOneADay'))
+    return redirect(url_for('index', notification_code='none'))
+
+
+@app.route("/api/logout", methods=['get', 'post'])
+def customer_logout():
+    logout_user()
+    if session:
+        utils.session_clear('response')
+    return redirect(url_for('index'))
+
+
+################## ADMIN VIEW ##############
+####### admin chung #############
 @app.route('/admin/sign-in', methods=['get', 'post'])
 def signin():
     if current_user.is_authenticated:
@@ -108,180 +195,7 @@ def change_pass():
                 db.session.commit()
     return redirect(url_for('accountset.__index__'))
 
-
-@app.route('/api/login', methods=['POST'])
-def customer_login():
-    if request.method.__eq__('POST'):
-        otp_code = session.pop('response', None)
-        otp = str(request.form.get('otp_code'))
-        if otp == otp_code:
-            #get customer
-            customer = utils.get_accepted_customer_by_phone(request.form['customerPhoneNumber'])
-            if customer:
-                login_user(user=customer)
-                return redirect(url_for('index'))
-            else:
-                return redirect(url_for('index', notification_code='noSuccessReceipt'))
-    return render_template('index.html', current_phone=request.form['customerPhoneNumber'], error_code="Mã xác thực không hợp lệ.")
-
-
-@app.route("/api/otp-auth", methods=['POST'])
-def otp_auth():
-    if request.method.__eq__('POST'):
-        otp_code = random.randrange(100000, 999999)
-        if request.json:
-            phone_number = request.json['phoneNumber']
-            session.modified = True
-            session['response'] = str(otp_code)
-            print("======================== OTP la " + str(otp_code))
-            ###########Enable this line to send OTP for customer validation########################
-            '''message = utils.send_messages(phone_number, '[Phòng mạch Hồng Hiền Vy Tiến] Mã số xác thực của bạn là: ' + str(otp_code)
-                                              + '. Xin vui lòng không chia sẻ mã số này cho ai khác kể cả nhân viên của phòng mạch.')'''
-    return 'OK'
-
-
-@app.route("/api/otp-auth-again", methods=['POST'])
-def otp_auth_again():
-    if request.method.__eq__('POST'):
-        otp_code = random.randrange(100000, 999999)
-        if request.json:
-            utils.session_clear('response')
-            session.modified = True
-            session['response'] = str(otp_code)
-            print("======================== AGAIN OTP la " + str(otp_code))
-            phone_number = request.json['phoneNumber']
-            ###########Enable this line to send OTP for again customer validation########################
-            '''message = utils.send_messages(phone_number, '[Phòng mạch Hồng Hiền Vy Tiến] Mã số xác thực của bạn là: ' + str(otp_code)
-                                              + '. Xin vui lòng không chia sẻ mã số này cho ai khác kể cả nhân viên của phòng mạch.')'''
-    return 'OK'
-
-
-@app.route("/api/logout", methods=['get', 'post'])
-def customer_logout():
-    logout_user()
-    if session:
-        utils.session_clear('response')
-    return redirect(url_for('index'))
-
-
-@app.route("/api/add-new-order", methods=['get', 'post'])
-@login_required
-def new_order_from_client():
-    if current_user.is_authenticated:
-        if request.method.__eq__('POST'):
-            first_name = current_user.first_name
-            last_name = current_user.last_name
-            birthday = current_user.birthday
-            gender_id = current_user.gender_id
-            phone_number = current_user.phone_number
-            appointment_date = datetime.now()
-            #New data
-            note = str(request.form.get('customer-note'))
-            schedules = utils.rounded_time(datetime.strptime(request.form.get('order-date'), '%Y-%m-%dT%H:%M'))
-            print(phone_number)
-            print(schedules)
-            if not utils.check_customer_exist_on_date(schedules.date(), phone_number):
-                if not utils.check_exist_order_at_date_time(schedules):
-                    #commit to database
-                    utils.add_new_order(first_name, last_name, birthday, phone_number, gender_id, appointment_date, note
-                                        , schedules)
-                    return redirect(url_for('index', notification_code='submitSuccess'))
-                else:
-                    return redirect(url_for('index', notification_code='ExistOne'))
-            else:
-                return redirect(url_for('index', notification_code='justOneADay'))
-    return redirect(url_for('index', notification_code='none'))
-
-
-########## NURSE #################
-#tạo lịch hẹn mới trên trang y tá
-@app.route("/add-new-appoinment", methods=['get', 'post'])
-def new_orderCus():
-    if current_user.is_authenticated:
-        err_msg = ''
-        if request.method.__eq__('POST'):
-            first_name = request.form.get('customer-fname')
-            last_name = request.form.get('customer-lname')
-            birthday = request.form.get('customer-birth')
-            gender_id = request.form.get('customer-gender')
-            phone_number = request.form.get('customer-phone')
-            appointment_date = request.form.get('order-date')
-            note = str(request.form.get('customer-note'))
-            schedules = utils.rounded_time(datetime.strptime(request.form.get('order-date'), '%Y-%m-%dT%H:%M'))
-            print(phone_number)
-            print(schedules)
-            if not utils.check_customer_exist_on_date(schedules.date(), phone_number):
-                if not utils.check_exist_order_at_date_time(schedules):
-                    # commit to database
-                    utils.add_new_order(first_name, last_name, birthday, phone_number, gender_id, appointment_date, note
-                                        , schedules)
-                    return redirect(url_for('new_order', err_msg='Đơn hẹn đã được đặt thành công'))
-                else:
-                    return redirect(url_for('new_order', err_msg='Thời gian hẹn của khách hàng bị trùng lịch hẹn. Vui lòng đăng ký hẹn thời điểm khác.'))
-            else:
-                return redirect(url_for('new_order', err_msg='Đơn hẹn ngày hôm nay của khách hàng đã được đặt. Trùng lịch hẹn.'))
-        return redirect(url_for('new_order', err_msg=''))
-
-
-@app.route("/new_order", methods=['get, post'])
-def new_order():
-    return render_template('admin/nurse_appoinments.html')
-
-
-@app.route('/api/payment', methods=['get', 'post'])
-def pay():
-    if current_user.is_authenticated:
-        if request.method.__eq__("POST"):
-            medical_id = request.form['medical-bill-id']
-            if medical_id:
-                customer_id = utils.get_customer_sche_information(
-                    utils.get_medical_bill_by_id(medical_id).customer_sche).customer_id
-                regulation = utils.get_last_reg()
-
-                utils.add_new_receipt(regulation_id=regulation, medical_bill_id=medical_id,
-                                      customer_id=customer_id)
-                utils.pdf_create_receipt(medical_bill_id=medical_id)
-                return redirect('/admin/payment' + "?statusPayment=submitSuccess")
-    return redirect('/admin/payment' + "?statusPayment=falseCheckout")
-
-
-@app.route('/api/check-receipt', methods=['get', 'post'])
-def check_receipt_history():
-    if current_user.is_authenticated:
-        if request.method.__eq__("POST"):
-            phone_check = request.form['phone-check']
-            list_re = utils.get_receipt_history(phone_check)
-            if list_re:
-                return render_template('/admin/receipt_history.html', phone_check=phone_check, list_re=list_re)
-    return render_template('/admin/receipt_history.html')
-
-
-@app.route('/admin/appoinments/confirm-customersche', methods=['put'])
-def confirm_customer_sche():
-    data = request.json
-    id = data.get('id')
-
-    timer = Customer.query.get(id).appointment_date.time()
-    schedule = utils.get_schedule_by_date(datetime.now().date())
-    if not schedule:
-        schedule = utils.add_schedule(datetime.now().date())
-    try:
-        utils.add_customer_sche(id, schedule.id, timer)
-    except:
-        return {'status': 404}
-
-    return {'status': 201, 'id':id}
-
-@app.route('/admin/appoinments/cancel-customersche', methods=['put'])
-def cancel_customer_sche():
-    data = request.json
-    id = data.get('id')
-    try:
-        utils.cancel_customersche(id)
-    except:
-        return {'status': 404}
-
-    return {'status': 201, 'id':id}
+####################### DOCTOR ###########################
 
 
 @app.route("/admin/createmedicalbill/load-patient", methods=['post'])
@@ -439,6 +353,98 @@ def common_response():
         'medicine': session.get('medicine'),
         'medical_bill': session.get('medical_bill')
     }
+
+
+#########################NURSE ###########################
+#tạo lịch hẹn mới trên trang y tá
+@app.route("/add-new-appoinment", methods=['get', 'post'])
+def new_orderCus():
+    if current_user.is_authenticated:
+        err_msg = ''
+        if request.method.__eq__('POST'):
+            first_name = request.form.get('customer-fname')
+            last_name = request.form.get('customer-lname')
+            birthday = request.form.get('customer-birth')
+            gender_id = request.form.get('customer-gender')
+            phone_number = request.form.get('customer-phone')
+            appointment_date = request.form.get('order-date')
+            note = str(request.form.get('customer-note'))
+            schedules = utils.rounded_time(datetime.strptime(request.form.get('order-date'), '%Y-%m-%dT%H:%M'))
+            print(phone_number)
+            print(schedules)
+            if not utils.check_customer_exist_on_date(schedules.date(), phone_number):
+                if not utils.check_exist_order_at_date_time(schedules):
+                    # commit to database
+                    utils.add_new_order(first_name, last_name, birthday, phone_number, gender_id, appointment_date, note
+                                        , schedules)
+                    return redirect(url_for('new_order', err_msg='Đơn hẹn đã được đặt thành công'))
+                else:
+                    return redirect(url_for('new_order', err_msg='Thời gian hẹn của khách hàng bị trùng lịch hẹn. Vui lòng đăng ký hẹn thời điểm khác.'))
+            else:
+                return redirect(url_for('new_order', err_msg='Đơn hẹn ngày hôm nay của khách hàng đã được đặt. Trùng lịch hẹn.'))
+        return redirect(url_for('new_order', err_msg=''))
+
+
+@app.route("/new_order", methods=['get, post'])
+def new_order():
+    return render_template('admin/nurse_appoinments.html')
+
+
+@app.route('/api/payment', methods=['get', 'post'])
+def pay():
+    if current_user.is_authenticated:
+        if request.method.__eq__("POST"):
+            medical_id = request.form['medical-bill-id']
+            if medical_id:
+                customer_id = utils.get_customer_sche_information(
+                    utils.get_medical_bill_by_id(medical_id).customer_sche).customer_id
+                regulation = utils.get_last_reg()
+
+                utils.add_new_receipt(regulation_id=regulation, medical_bill_id=medical_id,
+                                      customer_id=customer_id)
+                utils.pdf_create_receipt(medical_bill_id=medical_id)
+                return redirect('/admin/payment' + "?statusPayment=submitSuccess")
+    return redirect('/admin/payment' + "?statusPayment=falseCheckout")
+
+
+@app.route('/api/check-receipt', methods=['get', 'post'])
+def check_receipt_history():
+    if current_user.is_authenticated:
+        if request.method.__eq__("POST"):
+            phone_check = request.form['phone-check']
+            list_re = utils.get_receipt_history(phone_check)
+            if list_re:
+                return render_template('/admin/receipt_history.html', phone_check=phone_check, list_re=list_re)
+    return render_template('/admin/receipt_history.html')
+
+
+@app.route('/admin/appoinments/confirm-customersche', methods=['put'])
+def confirm_customer_sche():
+    data = request.json
+    id = data.get('id')
+
+    timer = Customer.query.get(id).appointment_date.time()
+    schedule = utils.get_schedule_by_date(datetime.now().date())
+    if not schedule:
+        schedule = utils.add_schedule(datetime.now().date())
+    try:
+        utils.add_customer_sche(id, schedule.id, timer)
+    except:
+        return {'status': 404}
+
+    return {'status': 201, 'id':id}
+
+
+@app.route('/admin/appoinments/cancel-customersche', methods=['put'])
+def cancel_customer_sche():
+    data = request.json
+    id = data.get('id')
+    try:
+        utils.cancel_customersche(id)
+    except:
+        return {'status': 404}
+
+    return {'status': 201, 'id':id}
 
 
 if __name__ == '__main__':

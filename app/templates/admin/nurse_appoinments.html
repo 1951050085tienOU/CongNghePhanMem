@@ -216,12 +216,12 @@
                                     <tbody>
                                       {% for p in sorted_sche %}
                                       <tr class="text-center">
-                                        <td >1</td>
-                                        <td >{{ p.examination_date }}</td>
-                                        <td>{{ p.first_name +" "+ p.last_name }}</td>
-                                        <td>{{ now.year - p.birthday.year }}</td>
-                                        <td>{{ p.phone_number }}</td>
-                                        <td>{{ p.address_id}}</td>
+                                        <td>*</td>
+                                        <td >{{ p[0] }}</td>
+                                        <td>{{ p[1].first_name +" "+ p[1].last_name }}</td>
+                                        <td>{{ now.year - p[1].birthday.year }}</td>
+                                        <td>{{ p[1].phone_number }}</td>
+                                        <td>{{ p[1].address_id}}</td>
                                       </tr>
                                       {% endfor %}
                                     </tbody>

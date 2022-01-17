@@ -2,7 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 import cloudinary
 from flask_login import LoginManager
-#from twilio.rest import Client
+from twilio.rest import Client
 
 app = Flask(__name__)
 
@@ -23,7 +23,7 @@ keys = {
     'twilio_number': '+16514482448'
 }
 #client = Client(account_sid, auth_token)
-#client = Client(keys['account_sid'], keys['auth_token'])
+client = Client(keys['account_sid'], keys['auth_token'])
 
 db = SQLAlchemy(app=app)
 login = LoginManager(app=app)
