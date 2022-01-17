@@ -12,8 +12,10 @@ from flask_login import login_user, logout_user, current_user, login_required
 def user_load(user_id):
     user = utils.get_user_by_id(user_id=user_id)
     try:
-        user_role = user.user_role
-        return user
+        if user.user_role:
+            return user
+        else:
+            return utils.get_customer_by_id(customer_id=user_id)
     except:
         return utils.get_customer_by_id(customer_id=user_id)
 
