@@ -3,19 +3,67 @@
 {% block body %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.6.2/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.6.2/chart.esm.js"></script>
-    <script src="{{ url_for('static', filename='js/stats.js') }}" ></script>
+    <script src="{{ url_for('static', filename='javascript/stats.js') }}"></script>
+    <div class='d-flex flex-row pr-3' style="margin-bottom:1rem">
+        <form class="pl-2 ml-auto " style="display: inline-block">
+            <input type="number" min="2000" id="year" name="year" value="{{year}}" placeholder="Năm">
+            <input type="number" min="1" max="12" id="month" name="month" value="{{month}}" placeholder="Tháng">
+            <input type="submit" class="btn btn-success" value="Thống kê">
+        </form>
+    </div>
     <div class="d-md-flex flex-row mb-2" style="border: 1px solid lightgray">
         <div name="stats" class="col-xs-12 col-md-6 p-0">
             <h3 class="p-2" style="font-weight: normal">Thống kê doanh thu</h3>
-            <div class='d-flex flex-row pr-3'>
-                <form class="pl-2 ml-auto" style="display: inline-block">
+            <div class='d-flex flex-row pr-3' >
+                <div class="pl-2 ml-auto" style="display: inline-block">
                     <select name='chart' id="chartSelect-stat" onchange="loadChartRevenue(this.options[this.selectedIndex].value, true)">
                         <option value="line" selected>Đường</option>
                         <option value="bar">Cột</option>
                         <option value="pie">Tròn</option>
                     </select>
-                    <input type="submit" class="btn btn-info" value="Thống kê" />
-                 </form>
+                    <button class="btn btn-info" data-toggle="modal" data-target="#myRevenueModal">Xem chi tiết</button>
+                    <div class="modal" id="myRevenueModal">
+                          <div class="modal-dialog modal-lg">
+                            <div class="modal-content" >
+                                <div id="source-html-revenue">
+                                  <!-- Modal Header -->
+                                  <div class="modal-header">
+                                    <h4 class="modal-title">Báo cáo thống kê doanh thu</h4>
+                                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                  </div>
+
+                                  <!-- Modal body -->
+                                  <div class="modal-body">
+                                      <table class="table">
+                                          <tr>
+                                            <th>Ngày</th>
+                                            <th>Số bệnh nhân</th>
+                                            <th>Doanh thu</th>
+                                            <th>Tỷ lệ</th>
+                                          </tr>
+                                          {% for r in revenue_stats %}
+                                          <tr>
+                                            <td>{{ r[0] }}</td>
+                                            <td>{{ r[1] }}</td>
+                                            <td>{{ r[2] }}</td>
+                                            <td>{{ "{:.2f}".format(r[3]) }}%</td>
+                                          </tr>
+                                          {% endfor %}
+                                      </table>
+                                  </div>
+                                </div>
+
+                              <!-- Modal footer -->
+                              <div class="modal-footer">
+                                <button type="button" class="btn btn-danger" data-dismiss="modal">Thoát</button>
+                                <button type="button" class="btn btn-success" onclick="window.location.replace('{{ url_for('static', filename='export/revenue_statistics.pdf')
+                         }}')" data-dismiss="modal">In báo cáo</button>
+                              </div>
+
+                            </div>
+                          </div>
+                    </div>
+                </div>
             </div>
             <div class="chart container" style="position: relative">
                 <canvas id="myRevenueChart" class=""></canvas>
@@ -23,16 +71,50 @@
         </div>
         <div class="col-xs-12 col-md-6 p-0">
             <h3 class="p-2" style="font-weight: normal">Tần suất khám</h3>
-            <div class='d-flex flex-row pr-3'>
+            <div class='d-flex flex-row pr-3' >
                 <!--<a href="#" style="display: inline-block" class="link-info ml-auto">Bảng biểu</a>-->
-                <form class="pl-2 ml-auto" style="display: inline-block">
+                <div class="pl-2 ml-auto" style="display: inline-block">
                     <select name='chart' id="chartSelect-name" onchange="loadChartMedical(this.options[this.selectedIndex].value, true)">
                         <option value="line">Đường</option>
                         <option value="bar" selected>Cột</option>
                         <option value="pie">Tròn</option>
                     </select>
-                    <input type="submit" class="btn btn-info" value="Thống kê" />
-                 </form>
+                    <button class="btn btn-info" data-toggle="modal" data-target="#myExaminationModal">Xem chi tiết</button>
+                    <div class="modal" id="myExaminationModal">
+                          <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div id="source-html-examination">
+                                  <!-- Modal Header -->
+                                  <div class="modal-header">
+                                    <h4 class="modal-title">Thống kê tần suất khám</h4>
+                                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                  </div>
+
+                                  <!-- Modal body -->
+                                  <div class="modal-body">
+                                      <table class="table">
+                                          <tr>
+                                                <th>Ngày</th>
+                                                <th>Số khách đã khám</th>
+                                            </tr>
+                                            {% for e in examination_stats %}
+                                            <tr>
+                                                <td> {{ e[0] }} </td>
+                                                <td> {{ e[1] }} </td>
+                                            </tr>
+                                            {% endfor %}
+                                      </table>
+                                  </div>
+                                </div>
+                              <!-- Modal footer -->
+                              <div class="modal-footer">
+                                <button type="button" class="btn btn-danger" data-dismiss="modal">Thoát</button>
+                              </div>
+
+                            </div>
+                          </div>
+                    </div>
+                 </div>
             </div>
             <div class="chart container pb-2" style="position: relative">
                 <canvas id="myExaminationChart" class=""></canvas>
@@ -48,29 +130,72 @@
         </div>
         <div class="d-md-flex col-xs-12 col-md-6 m-4">
             <div class="align-self-center text-justify" style="width: 100%">
-                <h4 class="pb-2 " style="font-weight: normal; font-size: 20px">Thống kê thuốc sử dụng tháng <span>12</span></h4>
+                <h4 class="pb-2 " style="font-weight: normal; font-size: 20px">Thống kê thuốc sử dụng tháng <span>{{month}}</span></h4>
                 <div class='d-flex flex-row pr-3 py-3'>
-                <!--<a href="#" style="display: inline-block" class="link-info pb-3">Bảng biểu</a>-->
-                <form class="pl-2" style="display: inline-block">
-                    <select name='chart' id="chartSelect-medicine" onchange="loadChartMedicine(this.options[this.selectedIndex].value, true)">
-                        <option value="line">Đường</option>
-                        <option value="bar">Cột</option>
-                        <option value="pie" selected>Tròn</option>
-                    </select>
-                    <input type="submit" class="btn btn-info" value="Thống kê" />
-                 </form>
+                    <!--<a href="#" style="display: inline-block" class="link-info pb-3">Bảng biểu</a>-->
+                    <div class="pl-2" style="display: inline-block" >
+                        <select name='chart' id="chartSelect-medicine" onchange="loadChartMedicine(this.options[this.selectedIndex].value, true)">
+                            <option value="line">Đường</option>
+                            <option value="bar">Cột</option>
+                            <option value="pie" selected>Tròn</option>
+                        </select>
+                        <button class="btn btn-info" data-toggle="modal" data-target="#myMedicineModal">Xem chi tiết</button>
+                        <!-- The Modal -->
+                        <div class="modal" id="myMedicineModal">
+                              <div class="modal-dialog modal-xl">
+                                <div class="modal-content">
+                                    <div id="source-html-medicine">
+                                      <!-- Modal Header -->
+                                      <div class="modal-header">
+                                        <h4 class="modal-title">Báo cáo sử dụng thuốc</h4>
+                                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                      </div>
+
+                                      <!-- Modal body -->
+                                      <div class="modal-body">
+                                          <table class="table">
+                                              <tr>
+                                                <th>Thuốc</th>
+                                                <th>Đơn vị tính</th>
+                                                <th>Số lượng</th>
+                                                <th>Số lần dùng</th>
+                                              </tr>
+                                              {% for m in medicine_stats %}
+                                              <tr>
+                                                <td>{{ m[0].name }}</td>
+                                                <td>
+                                                    {{"{:,.1f}".format(m[0].price)}} {% if m[0].unit %}{{m[0].unit}}{% else %}VND{% endif %}
+                                                </td>
+                                                <td>{{ m[1] }}</td>
+                                                <td>{{ m[2] }}</td>
+                                              </tr>
+                                              {% endfor %}
+                                          </table>
+                                      </div>
+                                    </div>
+                                  <!-- Modal footer -->
+                                  <div class="modal-footer">
+                                    <button type="button" class="btn btn-danger" data-dismiss="modal">Thoát</button>
+                                    <button type="button" class="btn btn-success"  onclick="window.location.replace('{{ url_for('static', filename='export/medicine_usage.pdf')
+                         }}')" data-dismiss="modal">In báo cáo</button>
+                                  </div>
+
+                                </div>
+                              </div>
+                        </div>
+                    </div>
                 </div>
                 <div style="font-weight: normal; font-size: 15px">
                     <p>
                         Thuốc cần chú ý bổ sung thêm:
                         {% for t in thuoc_bo_sung %}
-                        {{ t.name }}
+                        {{ t.name }} ,
                         {% endfor %}
                     </p>
                     <p>
                         Thuốc đã hết số lượng:
                         {% for t in thuoc_het_sl %}
-                        {{ t.name }}
+                        {{ t.name }} ,
                         {% endfor %}
                     </p>
                     <p>
@@ -82,65 +207,8 @@
             </div>
         </div>
     </div>
-<!--
-<div class="row">
-    <div class="col-md-6 col-xs-10">
-        <table class="table">
-            <tr>
-                <th>Ngày</th>
-                <th>Số bệnh nhân</th>
-                <th>Doanh thu</th>
-                <th>Tỷ lệ</th>
-            </tr>
-            {% for r in revenue_stats %}
-            <tr>
-                <td>{{ r[0] }}</td>
-                <td>{{ r[1] }}</td>
-                <td>{{ r[2] }}</td>
-                <td>{{ "{:.2f}".format(r[3]) }}%</td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
-</div>
-<div class="row">
-    <div class="col-md-6 col-xs-12" >
-        <table class="table">
-            <tr>
-                <th>Ngày</th>
-                <th>Số khách đã khám</th>
-            </tr>
-            {% for e in examination_stats %}
-            <tr>
-                <td> {{ e[0] }} </td>
-                <td> {{ e[1] }} </td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
-</div>
-<div class="row">
-    <div class="col-md-6 col-xs-12">
-        <table class="table">
-            <tr>
-                <th>Tên thuốc</th>
-                <th>Đơn vị tính</th>
-                <th>Số lượng</th>
-                <th>Số lần dùng</th>
-            </tr>
-            {% for m in medicine_stats %}
-            <tr>
-                <td>{{m[0]}}</td>
-                <td>{{"{:,.1f}".format(m[1])}} VND</td>
-                <td>{{m[2]}}</td>
-                <td>{{m[3]}}</td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
-</div>
--->
 <script>
+
     function referenceValue(varObj, value) {
         varObj.value = value;
     }
@@ -221,6 +289,22 @@
     function loadChartMedicine(type, destroy) {
         const ctxMedicineChart = document.getElementById('myMedicineChart').getContext('2d');
         loadChart(ctxMedicineChart, type, labels3, 'Thống kê thuốc', data3, colors3, borderColors3, oldChartForMedicine, destroy);
+    }
+    function exportHTML(obj){
+        var header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' "+
+            "xmlns:w='urn:schemas-microsoft-com:office:word' "+
+            "xmlns='http://www.w3.org/TR/REC-html40'>"+
+            "<head><meta charset='utf-8'><title>Export HTML to Word Document with JavaScript</title></head><body>";
+        var footer = "</body></html>";
+        var sourceHTML = header+obj.innerHTML+footer;
+
+        var source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
+        var fileDownload = document.createElement("a");
+        document.body.appendChild(fileDownload);
+        fileDownload.href = source;
+        fileDownload.download = 'document.doc';
+        fileDownload.click();
+        document.body.removeChild(fileDownload);
     }
 
     window.onload = function() {

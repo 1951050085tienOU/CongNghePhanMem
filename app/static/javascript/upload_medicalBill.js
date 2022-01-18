@@ -222,15 +222,13 @@ function addMedicalBill(){
         fetch('/admin/createmedicalbill/',{
             method:'post'
         }).then(res => res.json()).then(data =>{
-            if (data.code == 400){
-                console.info(data.code)
+            if (data.code == 201){
+                console.info(data.m)
                 location.reload()
-            }else{
+            }else if(data.code ==400){
                 console.info(data.code)
                 alert('Lập phiếu khám thất bại')
             }
         })
     }
 }
-
-

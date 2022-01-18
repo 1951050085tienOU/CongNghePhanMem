@@ -75,12 +75,12 @@
                             <div style="height: 300px; text-align: left" class="modal-body  ">
                                 <form action="{{ url_for('new_orderCus') }}" method="post" >
                                     <div class="d-flex flex-row my-4 form-group">
-                                        <label class="col-md-2" for="customer-fname">Họ</label>
-                                        <input class="col-md-4 text-center form-control" type="text" id="customer-fname"
-                                               name="customer-fname" placeholder="Nhập họ" autocomplete="off" required  />
-                                        <label class="px-4 col-md-2" for="customer-lname">Tên</label>
+                                        <label class="col-md-2" for="customer-lname">Họ</label>
+                                        <input class="col-md-4 text-center form-control" type="text" id="customer-lname"
+                                               name="customer-lname" placeholder="Nhập họ" autocomplete="off" required  />
+                                        <label class="px-4 col-md-2" for="customer-fname">Tên</label>
                                         <input class="col-md-4 text-center form-control" type="text"
-                                               id="customer-lname" name="customer-lname" placeholder="Nhập tên" autocomplete="off" required/>
+                                               id="customer-fname" name="customer-fname" placeholder="Nhập tên" autocomplete="off" required/>
                                     </div>
                                     <div class="d-flex flex-row my-4 form-group">
                                         <label class="col-md-2" for="customer-birth">Ngày sinh</label>
@@ -136,17 +136,26 @@
                             <h4 style="text-align: center" class="modal-title ">Xác nhận lịch hẹn</h4>
                             </div>
                             <!-- Modal body -->
-                            <form class="form-inline col-md-12">
-                                <div class="col-md-6 row">
-                                    <label for="customer_name">Tên khách hàng:</label>
-                                    <input style="margin:15px; width: 338px" name="customer_name" type="text" class="form-control" placeholder="Nhập tên khách hàng" id="customer_name">
+<!--                            <form class="form-inline col-md-12">-->
+<!--                                <div class="col-md-6 row">-->
+<!--                                    <label for="customer_name">Tên khách hàng:</label>-->
+<!--                                    <input style="margin:15px; width: 338px" name="customer_name" type="text" class="form-control" placeholder="Nhập tên khách hàng" id="customer_name">-->
+<!--                                </div>-->
+<!--                                <div class="col-md-5 row">-->
+<!--                                    <label for="phoneNumber">Số điện thoại:</label>-->
+<!--                                    <input style="margin:15px; width: 284px" name="phoneNumber" type="text" class="form-control" placeholder="Nhập số điện thoại" id="phoneNumber">-->
+<!--                                </div>-->
+<!--                                <div class="col-md-1">-->
+<!--                                    <button style="margin-left:35px" onclick="searchCustomerNotSchedule(document.getElementById('phoneNumber'))" class="btn btn-primary right"><i class="fa fa-search"></i></button>-->
+<!--                                </div>-->
+<!--                            </form>-->
+                            <form class="form-inline d-flex p-3 ">
+                                <div class="p-2 d-flex p-3 row">
+                                    <label class="p-2" for="date-select">Ngày: </label>
+                                    <input type="date" class="form-control p-2" name="date-select" id="date-select" >
                                 </div>
-                                <div class="col-md-5 row">
-                                    <label for="phoneNumber">Số điện thoại:</label>
-                                    <input style="margin:15px; width: 284px" name="phoneNumber" type="text" class="form-control" placeholder="Nhập số điện thoại" id="phoneNumber">
-                                </div>
-                                <div class="col-md-1">
-                                    <button style="margin-left:35px" onclick="searchCustomerNotSchedule(document.getElementById('phoneNumber'))" class="btn btn-primary right"><i class="fa fa-search"></i></button>
+                                <div style="margin-left:0.5rem" class="p-2">
+                                    <button onclick="" class="btn btn-primary" >Tìm</button>
                                 </div>
                             </form>
                             <div class="container col-md-12 ">
@@ -157,7 +166,7 @@
                                         <th scope="col" class="text-center">Tên</th>
                                         <th scope="col" class="text-center th-sm">Tuổi</th>
                                         <th scope="col" class="text-center">Số điện thoại</th>
-                                        <th scope="col" class="text-center">Địa chỉ</th>
+                                        <th scope="col" class="text-center">Thời gian hẹn</th>
                                       </tr>
                                     </thead>
                                     <tbody>
@@ -166,7 +175,7 @@
                                         <td >{{ p.first_name +" "+ p.last_name }}</td>
                                         <td>{{ now.year - p.birthday.year }}</td>
                                         <td>{{ p.phone_number }}</td>
-                                        <td>{{ p.address_id}}</td>
+                                        <td>{{ p.appointment_date}}</td>
                                         <td id="button-success{{p.id}}"><button type="submit" onclick="scheduleSuccess({{p.id}})" class="btn btn-info">Xác nhận lịch hẹn</button></td>
                                         <td id="button-cancel{{p.id}}"><button type="submit" onclick="scheduleError({{p.id}})" class="btn btn-danger">Hủy lịch hẹn</button></td>
                                       </tr>
@@ -206,7 +215,7 @@
                                     <thead >
                                       <tr>
                                         <th scope="col" class="text-center">STT</th>
-                                        <th scope="col" class="text-center th-sm">Lịch biểu</th>
+                                        <th scope="col" class="text-center th-sm">Giờ hẹn</th>
                                         <th scope="col" class="text-center">Tên Khách hàng</th>
                                         <th scope="col" class="text-center">Tuổi</th>
                                         <th scope="col" class="text-center">Số điện thoại</th>
@@ -216,12 +225,12 @@
                                     <tbody>
                                       {% for p in sorted_sche %}
                                       <tr class="text-center">
-                                        <td >1</td>
-                                        <td >{{ p.examination_date }}</td>
-                                        <td>{{ p.first_name +" "+ p.last_name }}</td>
-                                        <td>{{ now.year - p.birthday.year }}</td>
-                                        <td>{{ p.phone_number }}</td>
-                                        <td>{{ p.address_id}}</td>
+                                        <td >{{ sorted_sche.index(p)+1 }}</td>
+                                        <td >{{ p[1] }}</td>
+                                        <td>{{ p[0].first_name +" "+ p[0].last_name }}</td>
+                                        <td>{{ now.year - p[0].birthday.year }}</td>
+                                        <td>{{ p[0].phone_number }}</td>
+                                        <td>{{ p[0].address_id}}</td>
                                       </tr>
                                       {% endfor %}
                                     </tbody>
@@ -251,7 +260,7 @@
                     <th scope="col" class="text-center">Tên</th>
                     <th scope="col" class="text-center th-sm">Tuổi</th>
                     <th scope="col" class="text-center">Số điện thoại</th>
-                    <th scope="col" class="text-center">Địa chỉ</th>
+                    <th scope="col" class="text-center">Thời gian hẹn</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -260,7 +269,7 @@
                     <td >{{ p.first_name +" "+ p.last_name }}</td>
                     <td>{{ now.year - p.birthday.year }}</td>
                     <td>{{ p.phone_number }}</td>
-                    <td>{{ p.address_id}}</td>
+                    <td>{{ p.appointment_date}}</td>
                   </tr>
                   {% endfor %}
                 </tbody>
@@ -270,7 +279,6 @@
     </div>
 </div>
 <script>
-
 </script>
 
 {% endblock %}

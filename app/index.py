@@ -1,14 +1,26 @@
 import cloudinary.uploader
 import random
-
 import flask
-
 from app import CustomObject
-from app import app, db, login#, client
+from app import app, db, login#, client, keys
 from flask import render_template, url_for, request, redirect, jsonify
 from flask_login import login_user, logout_user, current_user, login_required
 
 
+######### load dùng user chung cả client và nhân viên ############
+@login.user_loader
+def user_load(user_id):
+    user = utils.get_user_by_id(user_id=user_id)
+    try:
+        if user.user_role:
+            return user
+        else:
+            return utils.get_customer_by_id(customer_id=user_id)
+    except:
+        return utils.get_customer_by_id(customer_id=user_id)
+
+
+########## TRANG INDEX CLIENT ##############
 @app.route('/')
 def index():
     notification_code = request.args.get('notification_code')
@@ -23,15 +35,91 @@ def index():
         return render_template('index.html', customers_list=customers_list, notif=notification_code)
 
 
-@login.user_loader
-def user_load(user_id):
-    user = utils.get_user_by_id(user_id=user_id)
-    if user.user_role:
-        return user
-    else:
-        return utils.get_customer_by_id(customer_id=user_id)
+@app.route('/api/login', methods=['POST'])
+def customer_login():
+    if request.method.__eq__('POST'):
+        otp_code = session.pop('response', None)
+        otp = str(request.form.get('otp_code'))
+        if otp == otp_code:
+            #get customer
+            customer = utils.get_accepted_customer_by_phone(request.form['customerPhoneNumber'])
+            if customer:
+                login_user(user=customer)
+                return redirect(url_for('index'))
+            else:
+                return redirect(url_for('index', notification_code='noSuccessReceipt'))
+    return render_template('index.html', current_phone=request.form['customerPhoneNumber'], error_code="Mã xác thực không hợp lệ.")
 
 
+@app.route("/api/otp-auth", methods=['POST'])
+def otp_auth():
+    if request.method.__eq__('POST'):
+        otp_code = random.randrange(100000, 999999)
+        if request.json:
+            phone_number = request.json['phoneNumber']
+            session.modified = True
+            session['response'] = str(otp_code)
+            print("======================== OTP la " + str(otp_code))
+            ###########Enable this line to send OTP for customer validation########################
+            message = utils.send_messages(phone_number, '[Phòng mạch Hồng Hiền Vy Tiến] Mã số xác thực của bạn là: ' + str(otp_code)
+                                              + '. Xin vui lòng không chia sẻ mã số này cho ai khác kể cả nhân viên của phòng mạch.')
+    return 'OK'
+
+
+@app.route("/api/otp-auth-again", methods=['POST'])
+def otp_auth_again():
+    if request.method.__eq__('POST'):
+        otp_code = random.randrange(100000, 999999)
+        if request.json:
+            utils.session_clear('response')
+            session.modified = True
+            session['response'] = str(otp_code)
+            print("======================== AGAIN OTP la " + str(otp_code))
+            phone_number = request.json['phoneNumber']
+            ###########Enable this line to send OTP for again customer validation########################
+            message = utils.send_messages(phone_number, '[Phòng mạch Hồng Hiền Vy Tiến] Mã số xác thực của bạn là: ' + str(otp_code)
+                                              + '. Xin vui lòng không chia sẻ mã số này cho ai khác kể cả nhân viên của phòng mạch.')
+    return 'OK'
+
+
+@app.route("/api/add-new-order", methods=['get', 'post'])
+@login_required
+def new_order_from_client():
+    if current_user.is_authenticated:
+        if request.method.__eq__('POST'):
+            first_name = current_user.first_name
+            last_name = current_user.last_name
+            birthday = current_user.birthday
+            gender_id = current_user.gender_id
+            phone_number = current_user.phone_number
+            appointment_date = request.form.get('order-date')
+            #New data
+            note = str(request.form.get('customer-note'))
+            schedules = utils.rounded_time(datetime.strptime(request.form.get('order-date'), '%Y-%m-%dT%H:%M'))
+            print(phone_number)
+            print(schedules)
+            if not utils.check_customer_exist_on_date(schedules.date(), phone_number):
+                if not utils.check_exist_order_at_date_time(schedules):
+                    #commit to database
+                    utils.add_new_order(first_name, last_name, birthday, phone_number, gender_id, appointment_date, note)
+                    return redirect(url_for('index', notification_code='submitSuccess'))
+                else:
+                    return redirect(url_for('index', notification_code='ExistOne'))
+            else:
+                return redirect(url_for('index', notification_code='justOneADay'))
+    return redirect(url_for('index', notification_code='none'))
+
+
+@app.route("/api/logout", methods=['get', 'post'])
+def customer_logout():
+    logout_user()
+    if session:
+        utils.session_clear('response')
+    return redirect(url_for('index'))
+
+
+################## ADMIN VIEW ##############
+####### admin chung #############
 @app.route('/admin/sign-in', methods=['get', 'post'])
 def signin():
     if current_user.is_authenticated:
@@ -108,92 +196,160 @@ def change_pass():
                 db.session.commit()
     return redirect(url_for('accountset.__index__'))
 
+####################### DOCTOR ###########################
 
-@app.route('/api/login', methods=['POST'])
-def customer_login():
-    if request.method.__eq__('POST'):
-        otp_code = session.pop('response', None)
-        otp = str(request.form.get('otp_code'))
-        if otp == otp_code:
-            #get customer
-            customer = utils.get_accepted_customer_by_phone(request.form['customerPhoneNumber'])
-            if customer:
-                login_user(user=customer)
-                return redirect(url_for('index'))
+
+@app.route("/admin/createmedicalbill/load-patient", methods=['post'])
+def load_patient():
+    data = request.json
+    sdt = data.get('sdt')
+    phieukham = data.get('phieukham')
+    try:
+        p = utils.tim_khach_hang(sdt=sdt)
+    except:
+        return {'status': 404, 'err_msg' :'Lỗi hệ thống'}
+
+    if p:
+        if str(p.gender_id).__eq__('Gender.NU'):
+            gender = 'Nữ'
+        else:
+            if str(p.gender_id).__eq__('Gender.NAM'):
+                gender = 'Nam'
             else:
-                return redirect(url_for('index', notification_code='noSuccessReceipt'))
-    return render_template('index.html', current_phone=request.form['customerPhoneNumber'], error_code="Mã xác thực không hợp lệ.")
+                gender = 'Khác'
 
+    return {'status': 201, 'patient': {
+        'id': p.id,
+        'first_name': p.first_name,
+        'last_name': p.last_name,
+        'age': datetime.now().year - p.birthday.year,
+        'gender': gender,
+        'phone_number': p.phone_number,
+    }, 'phieukham': phieukham}
 
-@app.route("/api/otp-auth", methods=['POST'])
-def otp_auth():
+@app.route('/admin/createmedicalbill/add-medicine', methods=['post'])
+def add_medicine_to_medical_bill():
+    data = request.json
+    medicine_name = data.get('medicine_name')
+    medicine = session.get('medicine')
+    try:
+        m = utils.get_medicine_by_name(name=medicine_name)
+    except:
+        return {'status': 404, 'err_msg': 'Lỗi hệ thống !!'}
+
+    if not medicine:
+        medicine = {}
+
+    if str(m.id) in medicine:
+        medicine[str(m.id)]['quantity'] = int(medicine[str(m.id)]['quantity']) + 1
+    else:
+        medicine[str(m.id)] = {
+            'id': m.id,
+            'name': m.name,
+            'quantity': 1,
+            'how_to_use': '',
+            'price': m.price
+        }
+
+    session['medicine'] = medicine
+
+    return {'status': 201, 'medicine': medicine[str(m.id)]}
+
+@app.route('/admin/createmedicalbill/delete-medicinebill-details', methods=['post'])
+def del_medicinebill_details():
+    try:
+        del session['medicine']
+    except:
+        return jsonify({'code': 400})
+
+    return jsonify({'code': 200})
+
+@app.route('/admin/createmedicalbill/update/quantity', methods=['put'])
+def update_medicine_quantity():
+    data = request.json
+    id = str(data.get('id'))
+    quantity = data.get('quantity')
+    medicine = session.get('medicine')
+    if medicine and id in medicine:
+        medicine[id]['quantity'] = quantity
+        session['medicine'] = medicine
+        return {'status': 201}
+
+    return {'status':404}
+
+@app.route('/admin/createmedicalbill/update/how-to_use', methods=['put'])
+def update_how_to_use():
+    data = request.json
+    id = str(data.get('id'))
+    how_to_use = data.get('how_to_use')
+    medicine = session.get('medicine')
+    if medicine and id in medicine:
+        medicine[id]['how_to_use'] = how_to_use
+        session['medicine'] = medicine
+        return {'status': 201}
+
+    return {'status': 404}
+
+@app.route('/admin/createmedicalbill/delete-medicine', methods=['put'])
+def delete_medicine():
+    data = request.json
+    id = str(data.get('id'))
+    medicine = session.get('medicine')
+    if medicine and id in medicine:
+        del medicine[id]
+        session['medicine'] = medicine
+    else:
+        return {'status': 404}
+
+    return {'status': 201, 'medicine': medicine}
+
+@app.route('/admin/createmedicalbill/create-medicalbill', methods=['post'])
+def create_medical_bill():
+    data = request.json
+    try:
+        medical_bill = session.get('medical_bill')
+        medical_bill = {
+            'ten': data.get('ten'),
+            'sdt': data.get('sdt'),
+            'tuoi': data.get('tuoi'),
+            'gioitinh': data.get('gioitinh'),
+            'phieukham': data.get('phieukham'),
+            'trieuchung': data.get('trieuchung'),
+            'benhchuandoan': data.get('benhchuandoan')
+        }
+        session['medical_bill'] = medical_bill
+    except:
+        return {'status': 404, 'err_msg': 'Lỗi hệ thống'}
+
+    return {'status': 201, 'medical_bill': medical_bill}
+
+@app.route('/admin/createmedicalbill/', methods=['post'])
+def add_new_medicalbill():
     if request.method.__eq__('POST'):
-        otp_code = random.randrange(100000, 999999)
-        if request.json:
-            phone_number = request.json['phoneNumber']
-            session.modified = True
-            session['response'] = str(otp_code)
-            print("======================== OTP la " + str(otp_code))
-            ###########Enable this line to send OTP for customer validation########################
-            '''message = utils.send_messages(phone_number, '[Phòng mạch Hồng Hiền Vy Tiến] Mã số xác thực của bạn là: ' + str(otp_code)
-                                              + '. Xin vui lòng không chia sẻ mã số này cho ai khác kể cả nhân viên của phòng mạch.')'''
-    return 'OK'
+        medicine = session.get('medicine')
+        medical_bill = session.get('medical_bill')
+        try:
+            customer = utils.get_customer_by_phone(medical_bill['sdt'])
+            customersche = utils.get_customersche(customer_id=customer.id, date=date.today())
+            m = utils.add_medical_bill(cs=customersche, medicalinfo=medical_bill, medicinebilldetails=medicine)
+            del session['medicine']
+            del session['medical_bill']
+        except:
+            return jsonify({'code': 400, 'medicine': medicine, 'medical_bill': medical_bill,
+                            'customer': customer.id, 'customersche':customersche.id})
+
+        return jsonify({'code': 201, 'medicine': medicine, 'medical_bill': medical_bill,
+                        'customer': customer.id, 'customersche': customersche.id, 'm': m.id})
+
+@app.context_processor
+def common_response():
+    return {
+        'medicine': session.get('medicine'),
+        'medical_bill': session.get('medical_bill')
+    }
 
 
-@app.route("/api/otp-auth-again", methods=['POST'])
-def otp_auth_again():
-    if request.method.__eq__('POST'):
-        otp_code = random.randrange(100000, 999999)
-        if request.json:
-            utils.session_clear('response')
-            session.modified = True
-            session['response'] = str(otp_code)
-            print("======================== AGAIN OTP la " + str(otp_code))
-            phone_number = request.json['phoneNumber']
-            ###########Enable this line to send OTP for again customer validation########################
-            '''message = utils.send_messages(phone_number, '[Phòng mạch Hồng Hiền Vy Tiến] Mã số xác thực của bạn là: ' + str(otp_code)
-                                              + '. Xin vui lòng không chia sẻ mã số này cho ai khác kể cả nhân viên của phòng mạch.')'''
-    return 'OK'
-
-
-@app.route("/api/logout", methods=['get', 'post'])
-def customer_logout():
-    logout_user()
-    if session:
-        utils.session_clear('response')
-    return redirect(url_for('index'))
-
-
-@app.route("/api/add-new-order", methods=['get', 'post'])
-@login_required
-def new_order_from_client():
-    if current_user.is_authenticated:
-        if request.method.__eq__('POST'):
-            first_name = current_user.first_name
-            last_name = current_user.last_name
-            birthday = current_user.birthday
-            gender_id = current_user.gender_id
-            phone_number = current_user.phone_number
-            appointment_date = datetime.now()
-            #New data
-            note = str(request.form.get('customer-note'))
-            schedules = utils.rounded_time(datetime.strptime(request.form.get('order-date'), '%Y-%m-%dT%H:%M'))
-            print(phone_number)
-            print(schedules)
-            if not utils.check_customer_exist_on_date(schedules.date(), phone_number):
-                if not utils.check_exist_order_at_date_time(schedules):
-                    #commit to database
-                    utils.add_new_order(first_name, last_name, birthday, phone_number, gender_id, appointment_date, note
-                                        , schedules)
-                    return redirect(url_for('index', notification_code='submitSuccess'))
-                else:
-                    return redirect(url_for('index', notification_code='ExistOne'))
-            else:
-                return redirect(url_for('index', notification_code='justOneADay'))
-    return redirect(url_for('index', notification_code='none'))
-
-
-########## NURSE #################
+#########################NURSE ###########################
 #tạo lịch hẹn mới trên trang y tá
 @app.route("/add-new-appoinment", methods=['get', 'post'])
 def new_orderCus():
@@ -213,8 +369,7 @@ def new_orderCus():
             if not utils.check_customer_exist_on_date(schedules.date(), phone_number):
                 if not utils.check_exist_order_at_date_time(schedules):
                     # commit to database
-                    utils.add_new_order(first_name, last_name, birthday, phone_number, gender_id, appointment_date, note
-                                        , schedules)
+                    utils.add_new_appointment(first_name, last_name, birthday, phone_number, gender_id, appointment_date, note)
                     return redirect(url_for('new_order', err_msg='Đơn hẹn đã được đặt thành công'))
                 else:
                     return redirect(url_for('new_order', err_msg='Thời gian hẹn của khách hàng bị trùng lịch hẹn. Vui lòng đăng ký hẹn thời điểm khác.'))
@@ -223,9 +378,9 @@ def new_orderCus():
         return redirect(url_for('new_order', err_msg=''))
 
 
-@app.route("/new_order", methods=['get, post'])
+@app.route("/new_order")
 def new_order():
-    return render_template('admin/nurse_appoinments.html')
+    return redirect('/admin/appoinments')
 
 
 @app.route('/api/payment', methods=['get', 'post'])
@@ -262,15 +417,16 @@ def confirm_customer_sche():
     id = data.get('id')
 
     timer = Customer.query.get(id).appointment_date.time()
-    schedule = utils.get_schedule_by_date(datetime.now().date())
+    schedule = utils.get_schedule_by_date(Customer.query.get(id).appointment_date.date())
     if not schedule:
-        schedule = utils.add_schedule(datetime.now().date())
+        schedule = utils.add_schedule(Customer.query.get(id).appointment_date.date())
     try:
         utils.add_customer_sche(id, schedule.id, timer)
     except:
         return {'status': 404}
 
-    return {'status': 201, 'id':id}
+    return {'status': 201, 'id': id}
+
 
 @app.route('/admin/appoinments/cancel-customersche', methods=['put'])
 def cancel_customer_sche():
@@ -281,164 +437,7 @@ def cancel_customer_sche():
     except:
         return {'status': 404}
 
-    return {'status': 201, 'id':id}
-
-
-@app.route("/admin/createmedicalbill/load-patient", methods=['post'])
-def load_patient():
-    data = request.json
-    sdt = data.get('sdt')
-    phieukham = data.get('phieukham')
-    try:
-        p = utils.tim_khach_hang(sdt=sdt)
-    except:
-        return {'status': 404, 'err_msg' :'Lỗi hệ thống'}
-
-    if p:
-        if str(p.gender_id).__eq__('Gender.NU'):
-            gender = 'Nữ'
-        else:
-            if str(p.gender_id).__eq__('Gender.NAM'):
-                gender = 'Nam'
-            else:
-                gender = 'Khác'
-
-    return {'status': 201, 'patient': {
-        'id': p.id,
-        'first_name': p.first_name,
-        'last_name': p.last_name,
-        'age': datetime.now().year - p.birthday.year,
-        'gender': gender,
-        'phone_number': p.phone_number,
-    }, 'phieukham': phieukham}
-
-
-@app.route('/admin/createmedicalbill/add-medicine', methods=['post'])
-def add_medicine_to_medical_bill():
-    data = request.json
-    medicine_name = data.get('medicine_name')
-    medicine = session.get('medicine')
-    try:
-        m = utils.get_medicine_by_name(name=medicine_name)
-    except:
-        return {'status': 404, 'err_msg': 'Lỗi hệ thống !!'}
-
-    if not medicine:
-        medicine = {}
-
-    if m.id in medicine:
-        medicine[m.id]['quantity'] = medicine[m.id]['quantity']+1
-    else:
-        medicine[m.id] = {
-            'id': m.id,
-            'name': m.name,
-            'quantity': 1,
-            'how_to_use': '',
-            'price': m.price
-        }
-
-    session['medicine'] = medicine
-
-    return {'status': 201, 'medicine': medicine[m.id]}
-
-
-@app.route('/admin/createmedicalbill/delete-medicinebill-details', methods=['post'])
-def del_medicinebill_details():
-    try:
-        del session['medicine']
-    except:
-        return jsonify({'code': 400})
-
-    return jsonify({'code': 200})
-
-
-@app.route('/admin/createmedicalbill/update/quantity', methods=['put'])
-def update_medicine_quantity():
-    data = request.json
-    id = data.get('id')
-    quantity = data.get('quantity')
-    medicine = session.get('medicine')
-    if medicine and id in medicine:
-        medicine[id]['quantity'] = quantity
-        session['medicine'] = medicine
-
-    return {'status': 201}
-
-
-@app.route('/admin/createmedicalbill/update/how-to_use', methods=['put'])
-def update_how_to_use():
-    data = request.json
-    id = data.get('id')
-    how_to_use = data.get('how_to_use')
-    medicine = session.get('medicine')
-    if medicine and id in medicine:
-        medicine[id]['how_to_use'] = how_to_use
-        session['medicine'] = medicine
-        return {'status': 201}
-
-    return {'status': 404}
-
-
-@app.route('/admin/createmedicalbill/delete-medicine', methods=['put'])
-def delete_medicine():
-    data = request.json
-    id = data.get('id')
-    medicine = session.get('medicine')
-    if medicine and id in medicine:
-        del medicine[id]
-        session['medicine'] = medicine
-    else:
-        return {'status': 404}
-
-    return {'status': 201, 'medicine': medicine}
-
-
-@app.route('/admin/createmedicalbill/create-medicalbill', methods=['post'])
-def create_medical_bill():
-    data = request.json
-    try:
-        medical_bill = session.get('medical_bill')
-        medical_bill = {
-            'ten': data.get('ten'),
-            'sdt': data.get('sdt'),
-            'tuoi': data.get('tuoi'),
-            'gioitinh': data.get('gioitinh'),
-            'phieukham': data.get('phieukham'),
-            'trieuchung': data.get('trieuchung'),
-            'benhchuandoan': data.get('benhchuandoan')
-        }
-        session['medical_bill'] = medical_bill
-    except:
-        return {'status': 404, 'err_msg': 'Lỗi hệ thống'}
-
-    return {'status': 201, 'medical_bill': medical_bill}
-
-
-@app.route('/admin/createmedicalbill/', methods=['post'])
-def add_new_medicalbill():
-    if request.method.__eq__('POST'):
-        medicine = session.get('medicine')
-        medical_bill = session.get('medical_bill')
-        try:
-            customer = utils.get_customer_by_phone(medical_bill['sdt'])
-            customersche = utils.get_customersche(customer_id=customer.id, date=date.today())
-            utils.add_medical_bill(cs=customersche, medicalinfo=medical_bill, medicinebilldetails=medicine)
-        except:
-            del session['medicine']
-            del session['medical_bill']
-            medicine = session.get('medicine')
-            medical_bill = session.get('medical_bill')
-            return jsonify({'code': 400, 'medicine': medicine, 'medical_bill': medical_bill})
-
-        return jsonify({'code': 201, 'medicine': medicine, 'medical_bill': medical_bill})
-
-
-@app.context_processor
-def common_response():
-    return {
-        'medicine': session.get('medicine'),
-        'medical_bill': session.get('medical_bill')
-    }
+    return {'status': 201, 'id': id}
 
 
 if __name__ == '__main__':

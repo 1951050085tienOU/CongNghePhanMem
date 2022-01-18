@@ -132,8 +132,8 @@
             let labels_patient = ['Đã hẹn', 'Còn lại']
             let data_patient = []
             {% if list_was_examination %}
-            data_patient.push({{ ordered_today }})
-            data_patient.push({{ max_customer - ordered_today }})
+            data_patient.push({{ count_cus_was_sche }})
+            data_patient.push({{ max_customer - count_cus_was_sche }})
             {% endif %}
             window.onload = function() {
                 const ctxPatient = document.getElementById('PatientChart').getContext('2d');
@@ -198,7 +198,7 @@
                                 <p class="px-4">Họ tên: <span>{{ next_order_info.first_name + ' ' +
                                     next_order_info.last_name }}</span></p>
                                 <p class="px-4">Số điện thoại: <span>{{ next_order_info.phone_number }}</span></p>
-                                <p class="px-4">Ngày hẹn: <span>{{ now.date() }}  {{ next_order_time.timer }}</span></p>
+                                <p class="px-4">Ngày hẹn: <span>{{ now }}  {{ next_order_time.timer }}</span></p>
                                 <p class="px-4">Thời điểm đặt hẹn: <span>{{ next_order_info.appointment_date }}</span></p>
                                 <p class="px-4">Ghi chú: <span>{{ next_order_info.note }}</span></p>
                             </div>
@@ -234,16 +234,16 @@
                         <th scope="col" class="text-center">Tên</th>
                         <th scope="col" class="text-center th-sm">Tuổi</th>
                         <th scope="col" class="text-center">Số điện thoại</th>
-                        <th scope="col" class="text-center">Địa chỉ</th>
+                        <th scope="col" class="text-center">Thời gian đặt hẹn</th>
                       </tr>
                     </thead>
                     <tbody>
-                    {% if search_customer %}
+                    {% if find_customer %}
                       <tr >
-                        <th scope="row" >{{ search_customer.first_name +" "+ search_customer.last_name }}</th>
-                        <td >{{ now.year - search_customer.birthday.year }} </td>
-                        <td >{{ search_customer.phone_number }}</td>
-                        <td >{{ search_customer.address_id }}</td>
+                        <th scope="row" >{{ find_customer.first_name +" "+ find_customer.last_name }}</th>
+                        <td >{{ now.year - find_customer.birthday.year }} </td>
+                        <td >{{ find_customer.phone_number }}</td>
+                        <td >{{ find_customer.appointment_date }}</td>
                       </tr>
                     {% else%}
                       {% for p in cus %}
@@ -251,7 +251,7 @@
                         <td >{{ p.first_name +" "+ p.last_name }}</td>
                         <td>{{ now.year - p.birthday.year }}</td>
                         <td>{{ p.phone_number }}</td>
-                        <td>{{ p.address_id}}</td>
+                        <td>{{ p.appointment_date}}</td>
                       </tr>
                       {% endfor %}
                     {% endif %}
@@ -324,11 +324,11 @@
                     {% if customer_now %}
                     <div>
                         <p class="px-4">Số thứ tự: <span>{{ customers_today.index(customer_now)+1 }}</span> </p>
-                        <p class="px-4">Họ tên: <span>{{ customer_now.first_name }}</span></p>
-                        <p class="px-4">Số điện thoại: <span>{{ customer_now.phone_number }}</span></p>
-                        <p class="px-4">Ngày hẹn: <span>{{ customer_now.appointment_date }}</span></p>
-                        <p class="px-4">Thời điểm đặt hẹn: <span>{{ customer_now.appointment_date }}</span></p>
-                        <p class="px-4">Ghi chú: <span>{{ customer_now.note }}</span></p>
+                        <p class="px-4">Họ tên: <span>{{customer_now[0].last_name + " " + customer_now[0].first_name}}</span></p>
+                        <p class="px-4">Số điện thoại: <span>{{ customer_now[0].phone_number }}</span></p>
+                        <p class="px-4">Giờ hẹn: <span>{{ customer_now[1] }}</span></p>
+                        <p class="px-4">Thời điểm đặt hẹn: <span>{{ customer_now[0].appointment_date }}</span></p>
+                        <p class="px-4">Ghi chú: <span>{{ customer_now[0].note }}</span></p>
                     </div>
                     {% else %}
                     <div class="text-center">
@@ -373,18 +373,22 @@
               </tr>
             </thead>
             <tbody>
-              {% if search_customer %}
-                {% for s in search_customer %}
-                  <tr>
-                    <td>{{ s[3]+" "+s[2]}}</td>
-                    <td>{{ now.year - s[4] }}</td>
-                    <td>{{ s[1] }}</td>
-                    <td>
-                        {% if s[0].diagnostic_disease %}{{s[0].diagnostic_disease}}{% else %} {% endif %}
-                    </td>
-                  </tr>
-                {% endfor %}
-              {% endif %}
+                {% if search_customer %}
+                    {% for s in search_customer %}
+                      <tr>
+                        <td>{{ s[3]+" "+s[2]}}</td>
+                        <td>{{ now.year - s[4] }}</td>
+                        <td>{{ s[1] }}</td>
+                        <td>
+                            {% if s[0].diagnostic_disease %}{{s[0].diagnostic_disease}}{% else %} {% endif %}
+                        </td>
+                      </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td><em>Khách hàng này chưa có phiếu khám nào</em></td>
+                    </tr>
+                {% endif %}
             </tbody>
           </table>
         </div>
