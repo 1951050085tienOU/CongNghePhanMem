@@ -1,6 +1,6 @@
 import math
 from datetime import datetime, timedelta
-from app import app, db, CustomObject#, client, keys
+from app import app, db, CustomObject, client, keys
 from sqlalchemy.sql import func
 from sqlalchemy import orm
 from sqlalchemy.orm import session, query
@@ -92,13 +92,13 @@ def reformat_0_phone_number(phone_number):
         return 0
 
 
-'''def send_messages(to_phone, content):
+def send_messages(to_phone, content):
     to_phone = reformat_phone_number(to_phone)
     if to_phone != '' and content !='':
         message = client.messages.create(
             body=content,
             from_=keys['twilio_number'],
-            to=to_phone)'''
+            to=to_phone)
 
 
 def get_customer_by_phone(phone_number):
@@ -176,23 +176,22 @@ def get_customer_phone_list():
         list_cutted_phone_number.append(str(customer)[-7:-3])
     return list_cutted_phone_number
 
-
 def get_history_look_up(phone_number):
     orders_history = []
-    orders = get_order_history(phone_number)
-    for order in orders:
-        new_obj = CustomObject.CustomObjectHistoryMedicalBill()
-        new_obj.name = order.first_name + ' ' + order.last_name
-        new_obj.ordered_date = order.appointment_date
-        if order.receipts:
-            new_obj.disease_diagnostic = get_medical_bill_by_id(order.receipts[0].medical_bill).diagnostic_disease
-            new_obj.order_state = order.receipts
-        new_obj.was_scheduled = order.was_scheduled
+    main_info = get_order_history(phone_number)
+    if main_info:
+        orders = main_info[0].receipts
+        if orders:
+            for order in orders:
+                new_obj = CustomObject.CustomObjectHistoryMedicalBill()
+                new_obj.name = main_info[0].first_name + ' ' + main_info[0].last_name
+                new_obj.ordered_date = get_medical_bill_by_id(order.medical_bill).symptom
+                new_obj.disease_diagnostic = get_medical_bill_by_id(order.medical_bill).diagnostic_disease
+                new_obj.order_state = True
+                new_obj.was_scheduled = main_info[0].was_scheduled
 
-        orders_history.append(new_obj)
-
+                orders_history.append(new_obj)
     return orders_history
-
 
 def rounded_time(date_time): #10 minutes for each order time
     hour = date_time.hour

@@ -179,7 +179,7 @@ class Receipt(db.Model):
 class Regulation(db.Model):
     __tablename__ = 'regulation'
     id = Column(Integer, primary_key=True)
-    examination_price = Column(Float, default=150000)
+    examination_price = Column(Float, default=100000)
     customer_quantity = Column(Integer, default=30)
     created_date = Column(DateTime, default=datetime.now())
     receipts = relationship('Receipt', backref='regulations', lazy=True)
@@ -222,7 +222,7 @@ if __name__ == "__main__":
     # db.session.add(a8)
 
     # #Add user
-    # u1 = User(first_name='Hien', last_name='Tran', birthday=datetime(2001, 8, 6, 0), phone_number='0964345626',
+    # u1 = User(first_name='Hien', last_name='Tran', birthday=datetime(2001, 8, 6, 0), phone_number='0964345627',
     #           username='hien', password='202cb962ac59075b964b07152d234b70', user_role=UserRole.MANAGER, gender_id=Gender.NU)
     # u2 = User(first_name='Hong', last_name='Tran', birthday=datetime(2001, 7, 11, 0), phone_number='0912123321',
     #           username='hong', password='202cb962ac59075b964b07152d234b70', user_role=UserRole.DOCTOR, gender_id=Gender.NU)
@@ -234,13 +234,13 @@ if __name__ == "__main__":
 
     # #Add customer
     # c1 = Customer(first_name='Hien', last_name='Tran Thi Thu', birthday=datetime(2001, 8, 6, 0), address_id=1,
-    #               phone_number='0943123253', appointment_date=datetime(2021, 12, 18, 8, 0), gender_id=Gender.NU, was_scheduled=True)
+    #               phone_number='0964345626', appointment_date=datetime(2021, 12, 18, 8, 0), gender_id=Gender.NU, was_scheduled=True)
     # c2 = Customer(first_name='Vi', last_name='Nguyen Thi Trieu', birthday=datetime(2001, 11, 29, 0), address_id=2,
     #               phone_number='0964321321', appointment_date=datetime(2022, 1, 15, 8, 30, 0), gender_id=Gender.NU, was_scheduled=True)
     # c3 = Customer(first_name='Hong', last_name='Tran Thi Bich', birthday=datetime(2001, 7, 11, 0), address_id=2,
     #               phone_number='0965443215', appointment_date=datetime(2021, 12, 18, 9, 0), gender_id=Gender.NU, was_scheduled=True)
     # c4 = Customer(first_name='Tien', last_name='Nguyen Minh', birthday=datetime(2001, 1, 1, 0), address_id=7,
-    #               phone_number='0965443219', appointment_date=datetime(2022, 1, 15, 9, 0), gender_id=Gender.NAM, was_scheduled=True)
+    #               phone_number='0962904570', appointment_date=datetime(2022, 1, 15, 9, 0), gender_id=Gender.NAM, was_scheduled=True)
     # c5 = Customer(first_name='A', last_name='Nguyen Van', birthday=datetime(2006, 1, 1, 0), address_id=5,
     #               phone_number='0965443307', appointment_date=datetime(2021, 12, 20, 13, 0), gender_id=Gender.NAM, was_scheduled=True)
     # c6 = Customer(first_name='B', last_name='Tran Thi', birthday=datetime(1999, 1, 1, 0), address_id=6,
@@ -250,9 +250,9 @@ if __name__ == "__main__":
     # c8 = Customer(first_name='An', last_name='Tran Nguyen Duy', birthday=datetime(2001, 1, 6, 0), address_id=3,
     #               phone_number='0856382954', appointment_date=datetime(2022, 1, 20, 8, 0), gender_id=Gender.NAM, was_scheduled=True)
     # c9 = Customer(first_name='Dao', last_name='Le Thi Hong', birthday=datetime(2001, 1, 29, 0), address_id=3,
-    #               phone_number='0584937427', appointment_date=datetime(2022, 1, 23, 13, 30, 0), gender_id=Gender.NU)
+    #               phone_number='0584937427', appointment_date=datetime(2022, 1, 23, 11, 0, 0), gender_id=Gender.NU)
     # c9 = Customer(first_name='Bao', last_name='Le Gia', birthday=datetime(2001, 7, 11, 0), address_id=6,
-    #               phone_number='0856473859', appointment_date=datetime(2021, 12, 23, 14, 0), gender_id=Gender.NAM)
+    #               phone_number='0856473859', appointment_date=datetime(2022, 1, 23, 14, 0), gender_id=Gender.NAM)
     # c10 = Customer(first_name='Cao', last_name='Bui Nam', birthday=datetime(2001, 1, 1, 0), address_id=4,
     #               phone_number='0657382647', appointment_date=datetime(2022, 1, 23, 14, 30, 0), gender_id=Gender.NAM)
     # c11 = Customer(first_name='Loc', last_name='Pham Hoang Diem', birthday=datetime(2006, 1, 1, 0), address_id=4,
@@ -454,16 +454,16 @@ if __name__ == "__main__":
     # cx = Customer.query.get(5)
     # cy = Customer.query.get(6)
     # cz = Customer.query.get(3)
-    # cx.appointment_date = datetime.now()
-    # cy.appointment_date = datetime.now()
-    # cz.appointment_date = datetime.now()
+    # cx.appointment_date = datetime(2022, 1, 23, 8, 30, 20, 0)
+    # cy.appointment_date = datetime(2022, 1, 23, 10, 30, 20, 0)
+    # cz.appointment_date = datetime(2022, 1, 23, 13, 30, 20, 0)
     # db.session.add(cx)
     # db.session.add(cy)
     # db.session.add(cz)
     # s = Schedule(examination_date=datetime.now())
     # db.session.add(s)
     # db.session.commit()
-    # csx = CustomerSche(customer_id=cx.id, schedule_id=s.id, examined=True, timer=time(9, 30, 20))
+    # csx = CustomerSche(customer_id=cx.id, schedule_id=s.id, examined=True, timer=time(8, 30, 20))
     # csy = CustomerSche(customer_id=cy.id, schedule_id=s.id, examined=False, timer=time(10, 30, 20))
     # csz = CustomerSche(customer_id=cz.id, schedule_id=s.id, examined=False, timer=time(13, 30, 20))
     # db.session.add(csx)
