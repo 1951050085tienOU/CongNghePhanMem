@@ -337,6 +337,14 @@ def revenue_stats_by_day(month, year):  #Thống kê doanh thu mỗi ngày trong
 
     return p.all()
 
+def doanhthu(month, year):
+    kq = 0
+    hoadon = Receipt.query.filter(extract('month', Receipt.created_date) == month,
+                                  extract('year', Receipt.created_date) == year).all()
+    for h in hoadon:
+        kq += h.total_price
+
+    return kq
 
 def revenue_stats(month, year, doanhthu):
     p = db.session.query(extract('day', Receipt.created_date), func.count(Customer.id),
@@ -493,62 +501,13 @@ def luot_kham(date):
     customers[0] = Regulation.query.filter(extract('day', Regulation.created_date).__le__(date)).all()[-1].customer_quantity
     # Số lượt khám đã hẹn
     customers[1] = len(CustomerSche.query.join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
-                                .filter(extract('day', Schedule.examination_date) == date).all())
+                                .filter(Schedule.examination_date.__eq__(date)).all())
     #Số lượt khám còn lại
     customers[2] = (customers[0] - customers[1])
     return customers
 
 
 ####################### DOCTOR #############################
-
-def lich_su_kham(customer_id, medical_id=None):
-    if medical_id:
-        return MedicalBill.query.join(CustomerSche, MedicalBill.customer_sche.__eq__(CustomerSche.id)).\
-        join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id)).add_columns(Schedule.examination_date)\
-        .join(Customer, CustomerSche.customer_id.__eq__(Customer.id))\
-        .filter(MedicalBill.id.__eq__(medical_id)).add_columns(Customer.first_name)\
-        .add_columns(Customer.last_name).add_columns(extract('year', Customer.birthday)).all()
-    else:
-        return MedicalBill.query.join(CustomerSche, MedicalBill.customer_sche.__eq__(CustomerSche.id)).\
-            join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id)).add_columns(Schedule.examination_date)\
-            .join(Customer, CustomerSche.customer_id.__eq__(Customer.id))\
-            .filter(CustomerSche.customer_id.__eq__(customer_id)).add_columns(Customer.first_name)\
-            .add_columns(Customer.last_name).add_columns(extract('year', Customer.birthday)).group_by(MedicalBill.id)\
-            .order_by(MedicalBill.id).all()
-
-
-def add_medical_bill(cs, medicalinfo, medicinebilldetails):
-    medicalbill = MedicalBill(user=current_user, symptom=medicalinfo['trieuchung'],
-                              diagnostic_disease=medicalinfo['benhchuandoan'], customer_sche=cs.id)
-    db.session.add(medicalbill)
-    db.session.commit()
-    for m in medicinebilldetails.values():
-        mbd = MedicalBillDetail(medicalbill=medicalbill, medicine=m['id'], quantity=m['quantity'],
-                                how_to_use=m['how_to_use'], unit_price=int(m['quantity'])*int(m['price']))
-        db.session.add(mbd)
-    db.session.commit()
-    return update_customersche(medicalbill.id)
-
-
-def update_customersche(id):
-    c = CustomerSche.query.join(MedicalBill, MedicalBill.customer_sche.__eq__(CustomerSche.id)) \
-        .filter(MedicalBill.id.__eq__(id)).first()
-    c.examined = True
-    db.session.add(c)
-    db.session.commit()
-    return c
-
-def get_customersche(customer_id, date):
-    return CustomerSche.query.join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
-        .filter(Schedule.examination_date == date, CustomerSche.customer_id.__eq__(customer_id)).first()
-
-
-##################### NURSE ###############################
-
-def get_auth_orders(date):
-    return db.session.query(Schedule.id).filter(extract('year', Schedule.examination_date) == date.year,
-                                                extract('month', Schedule.examination_date) == date.month,
-                                                extract('day', Schedule.examination_date) == date.day).all()
 
 
 def KiemTraRole(user):
@@ -566,7 +525,7 @@ def BenhNhanHienTai(date):
     return Customer.query.join(CustomerSche, CustomerSche.customer_id.__eq__(Customer.id)) \
         .join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id)) \
         .filter(Schedule.examination_date.__eq__(date), CustomerSche.examined == False)\
-        .add_columns(CustomerSche.timer).first()
+        .add_columns(CustomerSche.timer).order_by(CustomerSche.timer).first()
 
 
 def ThongKeBenhNhan(date):
@@ -601,6 +560,70 @@ def ThongKeLichHen(date):
     customers[2] = (customers[0] - customers[1])
     return customers
 
+def lich_su_kham(customer_id, medical_id=None):
+    if medical_id:
+        return MedicalBill.query.join(CustomerSche, MedicalBill.customer_sche.__eq__(CustomerSche.id))\
+            .join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id)).add_columns(Schedule.examination_date)\
+            .join(Customer, CustomerSche.customer_id.__eq__(Customer.id))\
+            .filter(MedicalBill.id.__eq__(medical_id)).add_columns(Customer.first_name)\
+            .add_columns(Customer.last_name).add_columns(extract('year', Customer.birthday)).all()
+    else:
+        return MedicalBill.query.join(CustomerSche, MedicalBill.customer_sche.__eq__(CustomerSche.id)).\
+            join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id)).add_columns(Schedule.examination_date)\
+            .join(Customer, CustomerSche.customer_id.__eq__(Customer.id))\
+            .filter(CustomerSche.customer_id.__eq__(customer_id)).add_columns(Customer.first_name)\
+            .add_columns(Customer.last_name).add_columns(extract('year', Customer.birthday)).group_by(MedicalBill.id)\
+            .order_by(MedicalBill.id).all()
+
+
+def add_medical_bill(cs, medicalinfo, medicinebilldetails):
+    medicalbill = MedicalBill(user=current_user, symptom=medicalinfo['trieuchung'],
+                              diagnostic_disease=medicalinfo['benhchuandoan'], customer_sche=cs.id)
+    db.session.add(medicalbill)
+    db.session.commit()
+    for m in medicinebilldetails.values():
+        mbd = MedicalBillDetail(medicalbill=medicalbill, medicine=m['id'], quantity=m['quantity'],
+                                how_to_use=m['how_to_use'], unit_price=int(m['quantity'])*int(m['price']))
+        db.session.add(mbd)
+    db.session.commit()
+    update_medicine(medicalbill.id)
+    return update_customersche(medicalbill.id)
+
+def update_customersche(id):
+    c = CustomerSche.query.join(MedicalBill, MedicalBill.customer_sche.__eq__(CustomerSche.id)) \
+        .filter(MedicalBill.id.__eq__(id)).first()
+    c.examined = True
+    db.session.add(c)
+    db.session.commit()
+    return c
+
+def update_medicine(id):
+    medical_bill = MedicalBill.query.get(id)
+    for m in medical_bill.details:
+        me = Medicine.query.get(m.medicine)
+        me.quantity = me.quantity - m.quantity
+        db.session.add(me)
+    db.session.commit()
+
+
+def get_customersche(customer_id, date):
+    return CustomerSche.query.join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+        .filter(Schedule.examination_date == date, CustomerSche.customer_id.__eq__(customer_id)).first()
+
+def cancel_medicalbill(customer_id, date):
+    c = CustomerSche.query.join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+        .filter(CustomerSche.customer_id.__eq__(customer_id), Schedule.examination_date.__eq__(date)).first()
+    c.examined = True
+    db.session.add(c)
+    db.session.commit()
+    return c
+
+##################### NURSE ###############################
+
+def get_auth_orders(date):
+    return db.session.query(Schedule.id).filter(extract('year', Schedule.examination_date) == date.year,
+                                                extract('month', Schedule.examination_date) == date.month,
+                                                extract('day', Schedule.examination_date) == date.day).all()
 
 #tra cứu khách hàng bác sĩ và nurse
 def load_customers(name=None, phone=None, codeMedicalBill=None, address=None):
@@ -623,11 +646,17 @@ def load_customers(name=None, phone=None, codeMedicalBill=None, address=None):
                 return p
 
 
+#lịch hẹn hiện tại
+def customersche_now(date):
+    return Customer.query.join(CustomerSche, CustomerSche.customer_id.__eq__(Customer.id))\
+        .join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id))\
+        .filter(CustomerSche.timer.__ge__(date.time()), Schedule.examination_date.__eq__(date.date()))\
+        .add_column(Schedule.examination_date).add_column(CustomerSche.timer).first()
+
 def load_sche(date):
     return Customer.query.join(CustomerSche, Customer.id.__eq__(CustomerSche.customer_id)) \
-        .filter(extract('year', Customer.appointment_date) == date.year,
-                extract('month', Customer.appointment_date) == date.month,
-                extract('day', Customer.appointment_date) == date.day).all()
+        .join(Schedule, CustomerSche.schedule_id.__eq__(Schedule.id)).filter(Schedule.examination_date.__eq__(date))\
+        .order_by(CustomerSche.timer).all()
 
 
 #danh sách khách đã được xác nhận lịch hẹn-y tá
@@ -729,6 +758,16 @@ def get_count_cus_was_exam(date):
     for order in count_sche:
         count += 1
     return count
+
+def display_address(list):
+    s = []
+    for l in list:
+        s.append(str(Address.query.get(Customer.query.get(l[0].id).address_id)))
+
+    return s
+
+def KiemTra(sche):
+    return CustomerSche.query.filter(CustomerSche.schedule_id.__eq__(sche.id)).count()
 
 def get_info_next_customer_in_orders():       #return the next customer will examine
     #just be in present date

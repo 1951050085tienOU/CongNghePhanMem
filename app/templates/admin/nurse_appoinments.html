@@ -172,7 +172,7 @@
                                     <tbody>
                                       {% for p in list_wasnt_sche %}
                                       <tr class="text-center">
-                                        <td >{{ p.first_name +" "+ p.last_name }}</td>
+                                        <td >{{ p.last_name +" "+ p.first_name }}</td>
                                         <td>{{ now.year - p.birthday.year }}</td>
                                         <td>{{ p.phone_number }}</td>
                                         <td>{{ p.appointment_date}}</td>
@@ -186,7 +186,7 @@
                             </div>
                             <!-- Modal footer -->
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-danger" data-dismiss="modal">Thoát</button>
+                                <button type="button" onclick="reload()" class="btn btn-danger" data-dismiss="modal">Thoát</button>
                             </div>
                         </div>
                     </div>
@@ -227,10 +227,12 @@
                                       <tr class="text-center">
                                         <td >{{ sorted_sche.index(p)+1 }}</td>
                                         <td >{{ p[1] }}</td>
-                                        <td>{{ p[0].first_name +" "+ p[0].last_name }}</td>
+                                        <td>{{ p[0].last_name +" "+ p[0].first_name }}</td>
                                         <td>{{ now.year - p[0].birthday.year }}</td>
                                         <td>{{ p[0].phone_number }}</td>
-                                        <td>{{ p[0].address_id}}</td>
+                                        <td>{% if p[0].address_id %}
+                                            {{ list_address[sorted_sche.index(p)]}}
+                                            {% else %} Chưa cập nhật {% endif %}</td>
                                       </tr>
                                       {% endfor %}
                                     </tbody>
@@ -266,7 +268,7 @@
                 <tbody>
                   {% for p in list_wasnt_sche %}
                   <tr class="text-center">
-                    <td >{{ p.first_name +" "+ p.last_name }}</td>
+                    <td >{{ p.last_name +" "+ p.first_name }}</td>
                     <td>{{ now.year - p.birthday.year }}</td>
                     <td>{{ p.phone_number }}</td>
                     <td>{{ p.appointment_date}}</td>
@@ -279,6 +281,9 @@
     </div>
 </div>
 <script>
+    function reload(){
+        location.reload()
+    }
 </script>
 
 {% endblock %}

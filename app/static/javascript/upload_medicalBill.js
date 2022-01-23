@@ -21,6 +21,26 @@
 //        }
 //    })
 //}
+function cancelMedicalBill(id){
+    if (confirm('Hủy lập phiếu cho lịch hẹn này ?')==true){
+        fetch('/admin/cancel-medicalbill',{
+            method:'post',
+            body: JSON.stringify({
+                'id':id
+            }),
+            headers:{
+                'Content-Type':'application/json'
+            }
+        }).then(res => res.json()).then(data=>{
+            if (data.status==201){
+                location.reload()
+            } else{
+                alert(data.msg)
+            }
+        })
+    }
+}
+
 function createmedicalbill(callback){
     let ten = document.getElementById('customer_name').value
     let sdt = document.getElementById('phoneNumber').value
@@ -114,7 +134,11 @@ function updateMedicineQuantity(obj, id){
             'Content-Type':'application/json'
         }
     }).then(res => res.json()).then(data =>{
-        console.info(data)
+        if(data.status == 400){
+            alert(data.msg)
+        } else {
+            console.info(data.status)
+        }
     })
 }
 
@@ -221,9 +245,12 @@ function addMedicalBill(){
     if(confirm('Lập phiếu khám ?')==true){
         fetch('/admin/createmedicalbill/',{
             method:'post'
-        }).then(res => res.json()).then(data =>{
+        }).then(res => {
+            console.info(res)
+            return res.json()
+        }).then(data =>{
             if (data.code == 201){
-                console.info(data.m)
+                console.info(data)
                 location.reload()
             }else if(data.code ==400){
                 console.info(data.code)

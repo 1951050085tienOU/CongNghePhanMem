@@ -5,6 +5,7 @@ from app import CustomObject
 from app import app, db, login#, client, keys
 from flask import render_template, url_for, request, redirect, jsonify
 from flask_login import login_user, logout_user, current_user, login_required
+from datetime import date, time
 
 
 ######### load dùng user chung cả client và nhân viên ############
@@ -197,7 +198,16 @@ def change_pass():
     return redirect(url_for('accountset.__index__'))
 
 ####################### DOCTOR ###########################
+@app.route("/admin/cancel-medicalbill", methods=['post'])
+def cancel_medicalbill():
+    data = request.json
+    id = data.get('id')
+    try:
+        c = utils.cancel_medicalbill(id, date.today())
+    except:
+        return {'status': 404, 'msg': 'Lỗi'}
 
+    return {'status': 201, 'msg':c.id}
 
 @app.route("/admin/createmedicalbill/load-patient", methods=['post'])
 def load_patient():
@@ -271,11 +281,15 @@ def update_medicine_quantity():
     quantity = data.get('quantity')
     medicine = session.get('medicine')
     if medicine and id in medicine:
-        medicine[id]['quantity'] = quantity
-        session['medicine'] = medicine
-        return {'status': 201}
+        if int(quantity) <= Medicine.query.get(int(id)).quantity:
+            medicine[id]['quantity'] = quantity
+            session['medicine'] = medicine
+            return {'status': 201}
+        else:
+            return {'status': 400, 'msg': 'Thuốc trong kho không đủ số lượng'}
 
-    return {'status':404}
+    return {'status': 404}
+
 
 @app.route('/admin/createmedicalbill/update/how-to_use', methods=['put'])
 def update_how_to_use():
@@ -335,11 +349,9 @@ def add_new_medicalbill():
             del session['medicine']
             del session['medical_bill']
         except:
-            return jsonify({'code': 400, 'medicine': medicine, 'medical_bill': medical_bill,
-                            'customer': customer.id, 'customersche':customersche.id})
+            return jsonify({'code': 400})
 
-        return jsonify({'code': 201, 'medicine': medicine, 'medical_bill': medical_bill,
-                        'customer': customer.id, 'customersche': customersche.id, 'm': m.id})
+        return jsonify({'code': 201, 'customersche': customersche.id,'m':m.id})
 
 @app.context_processor
 def common_response():
@@ -420,10 +432,13 @@ def confirm_customer_sche():
     schedule = utils.get_schedule_by_date(Customer.query.get(id).appointment_date.date())
     if not schedule:
         schedule = utils.add_schedule(Customer.query.get(id).appointment_date.date())
-    try:
-        utils.add_customer_sche(id, schedule.id, timer)
-    except:
-        return {'status': 404}
+    if utils.KiemTra(sche=schedule) < Regulation.query.all()[-1].customer_quantity:
+        try:
+            utils.add_customer_sche(id, schedule.id, timer)
+        except:
+            return {'status': 404}
+    else:
+        return {'status': 400, 'msg': 'Lịch hẹn của ngày đã đủ số lượng'}
 
     return {'status': 201, 'id': id}
 

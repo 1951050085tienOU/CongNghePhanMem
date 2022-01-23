@@ -94,15 +94,15 @@
                     <legend><h3 class="p-2" style="font-weight: normal; display: inline-block; width='">Quản lý phòng khám</h3></legend>
                     <div>
                         <h5 class="px-4">Hôm nay</h5>
-                        <p class="px-4">Tổng số lượt khám tối đa: <span>{{ max_customer }}</span> </p>
-                        <p class="px-4">Số lượt khám còn lại: <span>{{ max_customer - ordered_today }}</span></p>
-                        <p class="px-4">Số lượt khám đã hẹn: <span>{{ ordered_today }}</span></p>
+                        <p class="px-4">Tổng số lượt khám tối đa: <span>{{ luot_kham_today[0] }}</span> </p>
+                        <p class="px-4">Số lượt khám còn lại: <span>{{ luot_kham_today[2] }}</span></p>
+                        <p class="px-4">Số lượt khám đã hẹn: <span>{{ luot_kham_today[1] }}</span></p>
                     </div>
                     <div>
                         <h5 class="px-4">Ngày mai</h5>
-                        <p class="px-4">Tổng số lượt khám tối đa: <span>{{ max_customer }}</span></p>
-                        <p class="px-4">Số lượt khám còn lại: <span>{{ max_customer - ordered_tomorrow }}</span></p>
-                        <p class="px-4">Số lượt khám đã hẹn: <span>{{ ordered_tomorrow }}</span></p>
+                        <p class="px-4">Tổng số lượt khám tối đa: <span>{{ luot_kham_tomorrow[0] }}</span></p>
+                        <p class="px-4">Số lượt khám còn lại: <span>{{ luot_kham_tomorrow[2] }}</span></p>
+                        <p class="px-4">Số lượt khám đã hẹn: <span>{{ luot_kham_tomorrow[1] }}</span></p>
                     </div>
                 </fieldset>
             </div>
@@ -190,18 +190,25 @@
                     <fieldset style="border: 1px solid black; height: 400px">
                         <legend class="p-2" style="font-weight: normal; display: inline-block">Lịch hẹn tiếp theo</legend>
                         <div style=" font-size: 18px">
-                            {% if next_order_info %}
+                            {% if customer_sche_now %}
                             <p class="px-4">Giờ hẹn hiện tại:  <span id="real-time-clock" style="color: #56ed4e; font-size: 30pt;">time</span>
                                 <span id="real-date-clock" style="color: red; font-size: 15pt;">date</span></p>
                             <div style="padding-top: 20px; line-height: 15px">
-                                <p class="px-4">Số thứ tự: <span>{{ next_order_number }}</span> </p>
-                                <p class="px-4">Họ tên: <span>{{ next_order_info.first_name + ' ' +
-                                    next_order_info.last_name }}</span></p>
-                                <p class="px-4">Số điện thoại: <span>{{ next_order_info.phone_number }}</span></p>
-                                <p class="px-4">Ngày hẹn: <span>{{ now }}  {{ next_order_time.timer }}</span></p>
-                                <p class="px-4">Thời điểm đặt hẹn: <span>{{ next_order_info.appointment_date }}</span></p>
-                                <p class="px-4">Ghi chú: <span>{{ next_order_info.note }}</span></p>
+                                <p class="px-4">Số thứ tự: <span>{{cus.index(customer_sche_now[0])+1}}</span> </p>
+                                <p class="px-4">Họ tên: <span>{{ customer_sche_now[0].last_name + ' ' +
+                                    customer_sche_now[0].first_name }}</span></p>
+                                <p class="px-4">Số điện thoại: <span>{{ customer_sche_now[0].phone_number }}</span></p>
+                                <p class="px-4">Ngày hẹn: <span>{{ now }}  {{ customer_sche_now[2] }}</span></p>
+                                <p class="px-4">Thời điểm đặt hẹn: <span>{{ customer_sche_now[0].appointment_date }}</span></p>
+                                <p class="px-4">Ghi chú:
+                                    <span>
+                                        {% if customer_sche_now.note %}{{ customer_sche_now.note }}
+                                        {% else %} {% endif %}
+                                    </span>
+                                </p>
                             </div>
+                            {% else %}
+                            <p style="margin-left:0.5rem"><em>Không có lịch hẹn hiện tại</em></p>
                             {% endif %}
                         </div>
                     </fieldset>
@@ -240,7 +247,7 @@
                     <tbody>
                     {% if find_customer %}
                       <tr >
-                        <th scope="row" >{{ find_customer.first_name +" "+ find_customer.last_name }}</th>
+                        <th scope="row" >{{ find_customer.last_name +" "+ find_customer.first_name }}</th>
                         <td >{{ now.year - find_customer.birthday.year }} </td>
                         <td >{{ find_customer.phone_number }}</td>
                         <td >{{ find_customer.appointment_date }}</td>
@@ -248,7 +255,7 @@
                     {% else%}
                       {% for p in cus %}
                       <tr class="text-center">
-                        <td >{{ p.first_name +" "+ p.last_name }}</td>
+                        <td >{{ p.last_name +" "+ p.first_name }}</td>
                         <td>{{ now.year - p.birthday.year }}</td>
                         <td>{{ p.phone_number }}</td>
                         <td>{{ p.appointment_date}}</td>
@@ -264,6 +271,7 @@
     {% endif %}
 
     {% if current_user.is_authenticated and userrole.__eq__('UserRole.DOCTOR') %}
+    <script src="{{url_for('static', filename='javascript/upload_medicalBill.js')}}" ></script>
     <script>
         function loadChart(ctx, labels, data, type, label) {
             const chart = new Chart(ctx, {
@@ -328,7 +336,13 @@
                         <p class="px-4">Số điện thoại: <span>{{ customer_now[0].phone_number }}</span></p>
                         <p class="px-4">Giờ hẹn: <span>{{ customer_now[1] }}</span></p>
                         <p class="px-4">Thời điểm đặt hẹn: <span>{{ customer_now[0].appointment_date }}</span></p>
-                        <p class="px-4">Ghi chú: <span>{{ customer_now[0].note }}</span></p>
+                        <p class="px-4">
+                            Ghi chú: <span>{% if customer_now[0].note %}{{ customer_now[0].note }}{% else %} {% endif %}</span>
+                        </p>
+                    </div>
+                    <div class="d-flex flex-row-reverse">
+                        <a href="/admin/createmedicalbill"><button style="margin:0.5rem" class="btn btn-info p-2">Đi đến lập phiếu</button></a>
+                        <button style="margin:0.5rem" onclick="cancelMedicalBill({{customer_now[0].id}})" class="btn btn-danger p-2">Hủy lịch</button>
                     </div>
                     {% else %}
                     <div class="text-center">
@@ -394,6 +408,5 @@
         </div>
 
     </div>
-
     {% endif %}
 {% endblock %}

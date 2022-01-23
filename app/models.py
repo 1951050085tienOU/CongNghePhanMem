@@ -115,6 +115,7 @@ class MedicalBill(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     symptom = Column(String(100))   #triệu chứng
     diagnostic_disease = Column(String(100))    #bệnh chuẩn đoán
+    created_date = Column(DateTime, default=datetime.now())
     customer_sche = Column(Integer, ForeignKey(CustomerSche.id), nullable=False)
     user_id = Column(Integer, ForeignKey(User.id), nullable=False)
     details = relationship('MedicalBillDetail', backref='medicalbill', lazy=True)
@@ -180,6 +181,7 @@ class Regulation(db.Model):
     id = Column(Integer, primary_key=True)
     examination_price = Column(Float, default=150000)
     customer_quantity = Column(Integer, default=30)
+    created_date = Column(DateTime, default=datetime.now())
     receipts = relationship('Receipt', backref='regulations', lazy=True)
 
 
@@ -229,22 +231,36 @@ if __name__ == "__main__":
     # db.session.add(u1)
     # db.session.add(u2)
     # db.session.add(u3)
-    #
+
     # #Add customer
     # c1 = Customer(first_name='Hien', last_name='Tran Thi Thu', birthday=datetime(2001, 8, 6, 0), address_id=1,
-    #               phone_number='0943123253', appointment_date=datetime(2021, 12, 18, 0), gender_id=Gender.NU)
+    #               phone_number='0943123253', appointment_date=datetime(2021, 12, 18, 8, 0), gender_id=Gender.NU, was_scheduled=True)
     # c2 = Customer(first_name='Vi', last_name='Nguyen Thi Trieu', birthday=datetime(2001, 11, 29, 0), address_id=2,
-    #               phone_number='0964321321', appointment_date=datetime(2021, 12, 18, 0), gender_id=Gender.NU)
-    # c3 = Customer(first_name='Hong', last_name='Tran Thi Bich', birthday=datetime(2001, 7, 11, 0), address_id=3,
-    #               phone_number='0965443215', appointment_date=datetime(2021, 12, 18, 0), gender_id=Gender.NU)
-    # c4 = Customer(first_name='Tien', last_name='Nguyen Minh', birthday=datetime(2001, 1, 1, 0), address_id=4,
-    #               phone_number='0965443219', appointment_date=datetime(2021, 12, 20, 0), gender_id=Gender.NAM)
+    #               phone_number='0964321321', appointment_date=datetime(2022, 1, 15, 8, 30, 0), gender_id=Gender.NU, was_scheduled=True)
+    # c3 = Customer(first_name='Hong', last_name='Tran Thi Bich', birthday=datetime(2001, 7, 11, 0), address_id=2,
+    #               phone_number='0965443215', appointment_date=datetime(2021, 12, 18, 9, 0), gender_id=Gender.NU, was_scheduled=True)
+    # c4 = Customer(first_name='Tien', last_name='Nguyen Minh', birthday=datetime(2001, 1, 1, 0), address_id=7,
+    #               phone_number='0965443219', appointment_date=datetime(2022, 1, 15, 9, 0), gender_id=Gender.NAM, was_scheduled=True)
     # c5 = Customer(first_name='A', last_name='Nguyen Van', birthday=datetime(2006, 1, 1, 0), address_id=5,
-    #               phone_number='0965443307', appointment_date=datetime(2021, 12, 20, 0), gender_id=Gender.NAM)
+    #               phone_number='0965443307', appointment_date=datetime(2021, 12, 20, 13, 0), gender_id=Gender.NAM, was_scheduled=True)
     # c6 = Customer(first_name='B', last_name='Tran Thi', birthday=datetime(1999, 1, 1, 0), address_id=6,
-    #               phone_number='0965455221', appointment_date=datetime(2022, 1, 14, 0), gender_id=Gender.NU)
+    #               phone_number='0965455221', appointment_date=datetime(2022, 1, 14, 8, 30, 0), gender_id=Gender.NU, was_scheduled=True)
     # c7 = Customer(first_name='C', last_name='Le Hoai', birthday=datetime(1992, 1, 1, 0), address_id=7,
-    #               phone_number='0965455221', appointment_date=datetime(2022, 1, 15, 0), gender_id=Gender.NU)
+    #               phone_number='0965455521', appointment_date=datetime(2022, 1, 15, 10, 0), gender_id=Gender.NU, was_scheduled=True)
+    # c8 = Customer(first_name='An', last_name='Tran Nguyen Duy', birthday=datetime(2001, 1, 6, 0), address_id=3,
+    #               phone_number='0856382954', appointment_date=datetime(2022, 1, 20, 8, 0), gender_id=Gender.NAM, was_scheduled=True)
+    # c9 = Customer(first_name='Dao', last_name='Le Thi Hong', birthday=datetime(2001, 1, 29, 0), address_id=3,
+    #               phone_number='0584937427', appointment_date=datetime(2022, 1, 23, 13, 30, 0), gender_id=Gender.NU)
+    # c9 = Customer(first_name='Bao', last_name='Le Gia', birthday=datetime(2001, 7, 11, 0), address_id=6,
+    #               phone_number='0856473859', appointment_date=datetime(2021, 12, 23, 14, 0), gender_id=Gender.NAM)
+    # c10 = Customer(first_name='Cao', last_name='Bui Nam', birthday=datetime(2001, 1, 1, 0), address_id=4,
+    #               phone_number='0657382647', appointment_date=datetime(2022, 1, 23, 14, 30, 0), gender_id=Gender.NAM)
+    # c11 = Customer(first_name='Loc', last_name='Pham Hoang Diem', birthday=datetime(2006, 1, 1, 0), address_id=4,
+    #               phone_number='0856483953', appointment_date=datetime(2022, 1, 23, 15, 0), gender_id=Gender.NU)
+    # c12 = Customer(first_name='Minh', last_name='Vo Thi Thu', birthday=datetime(1999, 1, 1, 0), address_id=6,
+    #               phone_number='0965534245', appointment_date=datetime(2022, 1, 23, 15, 20, 0), gender_id=Gender.NU)
+    # c13 = Customer(first_name='Kiet', last_name='Doan Tuan', birthday=datetime(1992, 1, 1, 0), address_id=7,
+    #               phone_number='0647357284', appointment_date=datetime(2022, 1, 23, 10, 0), gender_id=Gender.NAM)
     # db.session.add(c1)
     # db.session.add(c2)
     # db.session.add(c3)
@@ -252,16 +268,24 @@ if __name__ == "__main__":
     # db.session.add(c5)
     # db.session.add(c6)
     # db.session.add(c7)
-
+    # db.session.add(c8)
+    # db.session.add(c9)
+    # db.session.add(c10)
+    # db.session.add(c11)
+    # db.session.add(c12)
+    # db.session.add(c13)
+    #
     # #Add Schedule
     # s1 = Schedule(examination_date=date(2021, 12, 18))
     # s2 = Schedule(examination_date=date(2021, 12, 20))
     # s3 = Schedule(examination_date=date(2022, 1, 14))
     # s4 = Schedule(examination_date=date(2022, 1, 15))
+    # s5 = Schedule(examination_date=date(2022, 1, 20))
     # db.session.add(s1)
     # db.session.add(s2)
     # db.session.add(s3)
     # db.session.add(s4)
+    # db.session.add(s5)
     #
     # #Add CustomerSche
     # cs1 = CustomerSche(customer_id=1, schedule_id=1, examined=True, timer=time(9, 3, 2, 3))
@@ -273,8 +297,9 @@ if __name__ == "__main__":
     # cs7 = CustomerSche(customer_id=1, schedule_id=3, examined=True, timer=time(10, 0, 0, 0))
     # cs8 = CustomerSche(customer_id=3, schedule_id=3, examined=True, timer=time(11, 0, 0, 0))
     # cs9 = CustomerSche(customer_id=7, schedule_id=4, examined=True, timer=time(8, 0, 0, 0))
-    # cs10 = CustomerSche(customer_id=2, schedule_id=4, examined=False, timer=time(10, 0, 0, 0))
-    # cs11 = CustomerSche(customer_id=4, schedule_id=4, examined=False, timer=time(10, 0, 0, 0))
+    # cs10 = CustomerSche(customer_id=2, schedule_id=4, examined=True, timer=time(10, 0, 0, 0))
+    # cs11 = CustomerSche(customer_id=4, schedule_id=4, examined=True, timer=time(10, 0, 0, 0))
+    # cs12 = CustomerSche(customer_id=8, schedule_id=5, examined=True, timer=time(10, 0, 0, 0))
     # db.session.add(cs1)
     # db.session.add(cs2)
     # db.session.add(cs3)
@@ -286,9 +311,10 @@ if __name__ == "__main__":
     # db.session.add(cs9)
     # db.session.add(cs10)
     # db.session.add(cs11)
+    # db.session.add(cs12)
     #
     # #Add regulation
-    # r1 = Regulation()
+    # r1 = Regulation(created_date=datetime(2021, 12, 18, 0))
     # db.session.add(r1)
 
     # #Add medicine_type
@@ -321,8 +347,8 @@ if __name__ == "__main__":
     # m3 = Medicine(name='Morphine', quantity=70, price=40000, out_of_date=datetime(2025, 9, 12, 0), producer_id=2, medicine_type=2)
     # m4 = Medicine(name="angiotensin", quantity=0, price=10000, out_of_date=datetime(2025, 9, 12, 0), producer_id=3, medicine_type=6)
     # m5 = Medicine(name="Touxirup", quantity=10, price=15000, out_of_date=datetime(2025, 9, 12, 0), producer_id=4, medicine_type=1)
-    # m6 = Medicine(name="Prospan Forte", quantity=0, price=10000, out_of_date=datetime(2025, 9, 12, 0), producer_id=3,medicine_type=1)
-    # m7 = Medicine(name="Loperamid", quantity=10, price=15000, out_of_date=datetime(2025, 9, 12, 0), producer_id=4, medicine_type=4)
+    # m6 = Medicine(name="Prospan Forte", quantity=120, price=10000, out_of_date=datetime(2025, 9, 12, 0), producer_id=3,medicine_type=1)
+    # m7 = Medicine(name="Loperamid", quantity=200, price=15000, out_of_date=datetime(2025, 9, 12, 0), producer_id=4, medicine_type=4)
     # db.session.add(m1)
     # db.session.add(m2)
     # db.session.add(m3)
@@ -330,17 +356,21 @@ if __name__ == "__main__":
     # db.session.add(m5)
     # db.session.add(m6)
     # db.session.add(m7)
-
+    #
     # #Add medicall_bill
-    # mb1 = MedicalBill(user_id=2, customer_sche=1, symptom='Người hay bị nhức mỏi', diagnostic_disease= 'Cơ thể yếu do không vận động thường xuyên')
-    # mb2 = MedicalBill(user_id=2, customer_sche=2, symptom='Ho, đau họng', diagnostic_disease= 'Viêm họng')
-    # mb3 = MedicalBill(user_id=2, customer_sche=3, symptom='Ho', diagnostic_disease= 'Viêm họng')
-    # mb4 = MedicalBill(user_id=2, customer_sche=4, symptom='Chảy máu mũi', diagnostic_disease= 'Viêm xoang')
-    # mb5 = MedicalBill(user_id=2, customer_sche=5, symptom='Đau đầu', diagnostic_disease='Đau đầu')
-    # mb6 = MedicalBill(user_id=2, customer_sche=6, symptom='Ho, mất vị giác', diagnostic_disease='Có thể bị covid, theo dõi thêm')
-    # mb7 = MedicalBill(user_id=2, customer_sche=7, symptom='Đau lưng, mỏi gối', diagnostic_disease='Dấu hiệu tuổi già')
-    # mb8 = MedicalBill(user_id=2, customer_sche=8, symptom='Thường xuyên hắt xì hơi', diagnostic_disease='Viêm xoang')
-    # mb9 = MedicalBill(user_id=2, customer_sche=9, symptom='Đau tim', diagnostic_disease='Đau tim')
+    # mb1 = MedicalBill(user_id=2, customer_sche=1, symptom='Người hay bị nhức mỏi',
+    #                    diagnostic_disease= 'Cơ thể yếu do không vận động thường xuyên', created_date=datetime(2021,12,18,0))
+    # mb2 = MedicalBill(user_id=2, customer_sche=2, symptom='Ho, đau họng', diagnostic_disease= 'Viêm họng', created_date=datetime(2021,12,18,0))
+    # mb3 = MedicalBill(user_id=2, customer_sche=3, symptom='Ho', diagnostic_disease= 'Viêm họng', created_date=datetime(2021,12,18,0))
+    # mb4 = MedicalBill(user_id=2, customer_sche=4, symptom='Chảy máu mũi', diagnostic_disease= 'Viêm xoang', created_date=datetime(2021,12,20,0))
+    # mb5 = MedicalBill(user_id=2, customer_sche=5, symptom='Đau đầu', diagnostic_disease='Đau đầu', created_date=datetime(2021,12,20,0))
+    # mb6 = MedicalBill(user_id=2, customer_sche=6, symptom='Ho, mất vị giác', diagnostic_disease='Có thể bị covid, theo dõi thêm', created_date=datetime(2022,1,14,0))
+    # mb7 = MedicalBill(user_id=2, customer_sche=7, symptom='Đau lưng, mỏi gối', diagnostic_disease='Dấu hiệu tuổi già', created_date=datetime(2022,1,14,0))
+    # mb8 = MedicalBill(user_id=2, customer_sche=8, symptom='Thường xuyên hắt xì hơi', diagnostic_disease='Viêm xoang', created_date=datetime(2022,1,14,0))
+    # mb9 = MedicalBill(user_id=2, customer_sche=9, symptom='Đau tim', diagnostic_disease='Đau tim', created_date=datetime(2022,1,15,0))
+    # mb10 = MedicalBill(user_id=2, customer_sche=10, symptom='Đau lưng', diagnostic_disease='Thoái hóa cột sống', created_date=datetime(2022,1,15,0))
+    # mb11 = MedicalBill(user_id=2, customer_sche=11, symptom='Mất ngủ', diagnostic_disease='Mất ngủ', created_date=datetime(2022,1,15,0))
+    # mb12 = MedicalBill(user_id=2, customer_sche=12, symptom='Đau mỏi vai', diagnostic_disease='Ngồi sai thế', created_date=datetime(2022,1,20,0))
     # db.session.add(mb1)
     # db.session.add(mb2)
     # db.session.add(mb3)
@@ -350,6 +380,9 @@ if __name__ == "__main__":
     # db.session.add(mb7)
     # db.session.add(mb8)
     # db.session.add(mb9)
+    # db.session.add(mb10)
+    # db.session.add(mb11)
+    # db.session.add(mb12)
     #
     # #Add medical_bill_detail
     # mbd1 = MedicalBillDetail(medical_bill=1, medicine=2, quantity=5, unit_price=30000, how_to_use='1 ngày uống 2 lần')
@@ -362,6 +395,9 @@ if __name__ == "__main__":
     # mbd8 = MedicalBillDetail(medical_bill=7, medicine=4, quantity=15, unit_price=20000, how_to_use='2 ngày uống 1 lần')
     # mbd9 = MedicalBillDetail(medical_bill=8, medicine=6, quantity=30, unit_price=30000, how_to_use='1 tuần uống 3 lần')
     # mbd10 = MedicalBillDetail(medical_bill=9, medicine=5, quantity=13, unit_price=30000, how_to_use='1 tuần uống 7 lần')
+    # mbd11 = MedicalBillDetail(medical_bill=10, medicine=6, quantity=30, unit_price=30000, how_to_use='1 tuần uống 3 lần')
+    # mbd12 = MedicalBillDetail(medical_bill=11, medicine=5, quantity=13, unit_price=30000, how_to_use='1 tuần uống 7 lần')
+    # mbd13 = MedicalBillDetail(medical_bill=12, medicine=6, quantity=30, unit_price=30000, how_to_use='1 tuần uống 3 lần')
     # db.session.add(mbd1)
     # db.session.add(mbd2)
     # db.session.add(mbd3)
@@ -372,6 +408,10 @@ if __name__ == "__main__":
     # db.session.add(mbd8)
     # db.session.add(mbd9)
     # db.session.add(mbd10)
+    # db.session.add(mbd11)
+    # db.session.add(mbd12)
+    # db.session.add(mbd13)
+    #
     # #Add receipt
     # w1 = Receipt(total_price=230000, regulation=1, medical_bill=1, customer_id=1, user_id=3,
     #              created_date=datetime(2021, 12, 18, 0))
@@ -391,6 +431,12 @@ if __name__ == "__main__":
     #              created_date=datetime(2022, 1, 14, 0))
     # w9 = Receipt(total_price=720000, regulation=1, medical_bill=9, customer_id=7, user_id=3,
     #              created_date=datetime(2022, 1, 15, 0))
+    # w10 = Receipt(total_price=615000, regulation=1, medical_bill=10, customer_id=2, user_id=3,
+    #              created_date=datetime(2022, 1, 15, 0))
+    # w11 = Receipt(total_price=1003000, regulation=1, medical_bill=11, customer_id=4, user_id=3,
+    #              created_date=datetime(2022, 1, 15, 0))
+    # w12 = Receipt(total_price=325000, regulation=1, medical_bill=12, customer_id=8, user_id=3,
+    #              created_date=datetime(2022, 1, 20, 0))
     # db.session.add(w1)
     # db.session.add(w2)
     # db.session.add(w3)
@@ -400,35 +446,38 @@ if __name__ == "__main__":
     # db.session.add(w7)
     # db.session.add(w8)
     # db.session.add(w9)
+    # db.session.add(w10)
+    # db.session.add(w11)
+    # db.session.add(w12)
 
-    # Thêm dữ liệu ngày hiện tại để xem thống kê
-    # c8 = Customer.query.get(5)
-    # c9 = Customer.query.get(6)
-    # c10 = Customer.query.get(3)
-    # c8.appointment_date = datetime.now()
-    # c9.appointment_date = datetime.now()
-    # c10.appointment_date = datetime.now()
-    # db.session.add(c8)
-    # db.session.add(c9)
-    # db.session.add(c10)
+    # #Thêm dữ liệu ngày hiện tại để xem thống kê
+    # cx = Customer.query.get(5)
+    # cy = Customer.query.get(6)
+    # cz = Customer.query.get(3)
+    # cx.appointment_date = datetime.now()
+    # cy.appointment_date = datetime.now()
+    # cz.appointment_date = datetime.now()
+    # db.session.add(cx)
+    # db.session.add(cy)
+    # db.session.add(cz)
     # s = Schedule(examination_date=datetime.now())
     # db.session.add(s)
     # db.session.commit()
-    # cs12 = CustomerSche(customer_id=c8.id, schedule_id=s.id, examined=True, timer=time(9, 30, 20))
-    # cs13 = CustomerSche(customer_id=c9.id, schedule_id=s.id, examined=False, timer=time(10, 30, 20))
-    # cs14 = CustomerSche(customer_id=c10.id, schedule_id=s.id, examined=False, timer=time(13, 30, 20))
-    # db.session.add(cs12)
-    # db.session.add(cs13)
-    # db.session.add(cs14)
+    # csx = CustomerSche(customer_id=cx.id, schedule_id=s.id, examined=True, timer=time(9, 30, 20))
+    # csy = CustomerSche(customer_id=cy.id, schedule_id=s.id, examined=False, timer=time(10, 30, 20))
+    # csz = CustomerSche(customer_id=cz.id, schedule_id=s.id, examined=False, timer=time(13, 30, 20))
+    # db.session.add(csx)
+    # db.session.add(csy)
+    # db.session.add(csz)
     # db.session.commit()
-    # mb10 = MedicalBill(user_id=2, customer_sche=cs12.id, symptom='Đau đầu, sổ mũi', diagnostic_disease='Đau đầu')
-    # db.session.add(mb10)
+    # mbx = MedicalBill(user_id=2, customer_sche=csx.id, symptom='Đau đầu, sổ mũi', diagnostic_disease='Đau đầu')
+    # db.session.add(mbx)
     # db.session.commit()
-    # mbd11 = MedicalBillDetail(medical_bill=mb10.id, medicine=1, quantity=15, unit_price=20000, how_to_use='2 ngày uống 1 lần')
-    # mbd12 = MedicalBillDetail(medical_bill=mb10.id, medicine=3, quantity=15, unit_price=50000, how_to_use='2 ngày uống 2 lần')
-    # db.session.add(mbd11)
-    # db.session.add(mbd12)
-    # r = Receipt(total_price=740000, regulation=1, medical_bill=mb10.id, customer_id=cs12.customer_id, user_id=3,
+    # mbdx = MedicalBillDetail(medical_bill=mbx.id, medicine=1, quantity=15, unit_price=20000, how_to_use='2 ngày uống 1 lần')
+    # mbdy = MedicalBillDetail(medical_bill=mbx.id, medicine=3, quantity=15, unit_price=50000, how_to_use='2 ngày uống 2 lần')
+    # db.session.add(mbdx)
+    # db.session.add(mbdy)
+    # r = Receipt(total_price=740000, regulation=1, medical_bill=mbx.id, customer_id=csx.customer_id, user_id=3,
     #              created_date=datetime.now())
     # db.session.add(r)
     #

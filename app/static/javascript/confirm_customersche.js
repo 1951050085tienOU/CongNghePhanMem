@@ -15,7 +15,10 @@ function scheduleSuccess(id){
                 <button type="submit" class="btn btn-success">Đã xác nhận</button>
                 `
                 btncancel.innerHTML = ``
-            } else {
+            } else if(data.status==400){
+                alert(data.msg)
+            }
+            else {
                 alert('Lỗi hệ thống')
             }
         })

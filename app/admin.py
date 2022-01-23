@@ -45,8 +45,13 @@ class General(AdminIndexView, ModelAuthenticated):
         #thống kê doanh thu tổng quát
         revenue_statistics = [] #danh sách chứa dữ liệu thống kê
         pre_months = utils.create_list_of_months(datetime.now().month) #danh sách tháng
-        for mm in pre_months:
-            revenue_statistics.append(utils.all_revenue_stats(mm, datetime.now().year))
+        if datetime.now().month < 6:
+            month_of_old_year = pre_months.index(12)
+            for mm in pre_months:
+                if pre_months.index(mm) >= month_of_old_year:
+                    revenue_statistics.append(utils.all_revenue_stats(mm, datetime.now().year - 1))
+                else:
+                    revenue_statistics.append(utils.all_revenue_stats(mm, datetime.now().year))
 
         #thống kê lượt khách hẹn
         reg = utils.get_regulation() #lấy quy định
@@ -55,6 +60,8 @@ class General(AdminIndexView, ModelAuthenticated):
         ordered_today = utils.get_amount_orders_in_date(datetime.today()) #khách hẹn ngày hôm nay
         ordered_tomorrow = utils.get_amount_orders_in_date(
                                     datetime.today() + timedelta(days=1))    # khách hẹn ngày hôm qua
+        luot_kham_today = utils.luot_kham(date.today())
+        luot_kham_tomorrow = utils.luot_kham(date.today() + timedelta(days=1))
         #thống kê thuốc trong kho
         percent_record = utils.medine_stock_percent_over_5()
         medicine_name = []
@@ -77,6 +84,7 @@ class General(AdminIndexView, ModelAuthenticated):
         count_cus_was_sche = utils.get_count_cus_was_exam(now)
 
         # khách tiếp theo
+        customer_sche_now = utils.customersche_now(datetime.now())
         # danh sách khám trong ngày
         next_order_customer = ''
         next_order_number = 0
@@ -96,11 +104,12 @@ class General(AdminIndexView, ModelAuthenticated):
         """Tổng quan của bác sĩ"""
         now = date.today()
         utils.update_customersche(MedicalBill.query.all()[-1].id)
-        # Bệnh nhân hiện tại
-        customer_now = utils.BenhNhanHienTai(now)
 
         # Lịch hẹn ngày
         customers_today = utils.LichHenNgay(now)
+
+        # Bệnh nhân hiện tại
+        customer_now = utils.BenhNhanHienTai(now)
 
         # Thống Kê bệnh nhân
         patient_stats = utils.ThongKeBenhNhan(now)
@@ -125,10 +134,11 @@ class General(AdminIndexView, ModelAuthenticated):
                            max_customer=max_customer, medical_fee=medical_fee, ordered_today=ordered_today,
                            ordered_tomorrow=ordered_tomorrow, us=us, current_user=current_user, find_customer=find_customer,
                            search_customer=search_customer, list_was_examination=list_was_examination,
-                           count_cus_was_sche=count_cus_was_sche, now=now, cus=cus,
+                           count_cus_was_sche=count_cus_was_sche, now=now, cus=cus, customer_sche_now=customer_sche_now,
                            next_order_time=the_next_order, next_order_info=next_order_customer,
                            next_order_number=next_order_number, userrole=userrole, customer_now=customer_now,
-                           customers_today=customers_today, patient_stats=patient_stats, patient_list=patient_list)
+                           customers_today=customers_today, patient_stats=patient_stats, patient_list=patient_list,
+                           luot_kham_today=luot_kham_today, luot_kham_tomorrow=luot_kham_tomorrow)
 
 
 class ManagerStatistics(ManagerView):
@@ -137,7 +147,6 @@ class ManagerStatistics(ManagerView):
         now = datetime.now()
         month = request.args.get('month', datetime.now().month)
         year = request.args.get('year', now.year)
-        doanhthu = request.args.get('doanhthu', 5000000)
         types = [{
             'value': 'line',
             'text': 'Đường'
@@ -149,6 +158,7 @@ class ManagerStatistics(ManagerView):
             'text': 'Tròn'
         }]
         type = request.args.get('chart')
+        doanhthu = utils.doanhthu(month=month, year=year)
         revenue_stats = utils.revenue_stats(month=month, year=year, doanhthu=doanhthu)
         utils.pdf_month_revenue(year, month, revenue_stats)
         utils.pdf_create_medicine_usage(year, month, utils.get_medicine_usage_in_month(year, month))
@@ -279,7 +289,7 @@ class CreateMedicalBill(DoctorView):
     def __index__(self):
         maphieu = MedicalBill.query.all()[-1].id
         symptom_available = MedicalBill.query.all()
-        medical_name = Medicine.query.all()
+        medical_name = Medicine.query.filter(Medicine.quantity > 0).all()
 
         return self.render('admin/doctor_medicalBill.html', symptom_available=symptom_available,
                            medical_name=medical_name, maphieumoi=maphieu+1)
@@ -307,7 +317,6 @@ class NurseView(BaseView):
     def is_accessible(self):
         return current_user.is_authenticated and str(current_user.user_role).__eq__('UserRole.NURSE')
 
-
 class appoinments(NurseView):
     @expose('/')
     def __index__(self):
@@ -319,9 +328,10 @@ class appoinments(NurseView):
         list_wasnt_sche = utils.list_cus_wasnt_axam(now)
         count_cus_wasnt_sche = utils.get_count_cus_wasnt_exam(now)
         sorted_sche = utils.sorted_schedule(now)
+        list_address = utils.display_address(sorted_sche)
 
         return self.render('admin/nurse_appoinments.html', cus=cus, now=now, list_wasnt_sche=list_wasnt_sche,
-                           count_cus_wasnt_sche=count_cus_wasnt_sche, sorted_sche=sorted_sche)
+                           count_cus_wasnt_sche=count_cus_wasnt_sche, sorted_sche=sorted_sche, list_address=list_address)
 
 class payment(NurseView):
     @expose('/')
